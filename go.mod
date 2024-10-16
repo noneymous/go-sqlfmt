@@ -1,4 +1,4 @@
-module github.com/kanmu/go-sqlfmt
+module github.com/noneymous/go-sqlfmt
 
 go 1.14
 

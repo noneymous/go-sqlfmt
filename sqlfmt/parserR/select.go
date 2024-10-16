@@ -2,22 +2,22 @@ package parserR
 
 import (
 	"fmt"
-	"github.com/kanmu/go-sqlfmt/sqlfmt/lexer"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
 type SelectExpr struct {
-	Values []interface{}
+	Values      []interface{}
 	SubQueryCnt int
 }
 
-func parseSelect(tokens []lexer.Token)(*SelectExpr, int, error){
+func parseSelect(tokens []lexer.Token) (*SelectExpr, int, error) {
 	expr := &SelectExpr{}
 
 	var (
-		idx int
-		value interface{}
+		idx      int
+		value    interface{}
 		consumed int
-		err error
+		err      error
 	)
 	for {
 		token := tokens[idx]
@@ -44,8 +44,8 @@ func parseSelect(tokens []lexer.Token)(*SelectExpr, int, error){
 	}
 }
 
-func (expr *SelectExpr) endTType(ttype lexer.TokenType) bool{
-	for _, end := range lexer.EndOfSelect{
+func (expr *SelectExpr) endTType(ttype lexer.TokenType) bool {
+	for _, end := range lexer.EndOfSelect {
 		if ttype == end {
 			return true
 		}

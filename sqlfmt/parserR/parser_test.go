@@ -2,10 +2,9 @@ package parserR
 
 import (
 	"fmt"
-	"github.com/kanmu/go-sqlfmt/sqlfmt/lexer"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 	"testing"
 )
-
 
 func TestParseTokens(t *testing.T) {
 	testTokens := []lexer.Token{

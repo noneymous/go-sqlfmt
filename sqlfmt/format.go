@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/kanmu/go-sqlfmt/sqlfmt/lexer"
-	"github.com/kanmu/go-sqlfmt/sqlfmt/parser"
-	"github.com/kanmu/go-sqlfmt/sqlfmt/parser/group"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/parser"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/parser/group"
 	"github.com/pkg/errors"
 	"strings"
 )
@@ -25,20 +25,20 @@ func Format(src string, options *Options) (string, error) {
 	}
 
 	/*
-	        var buf &bytes.Buffer{}
-	        for _, expr := range exprs {
-	            stmt, err = expr.Build(options)
-	            // err
-	            buf.WriteString(stmt)
-	        }
+		        var buf &bytes.Buffer{}
+		        for _, expr := range exprs {
+		            stmt, err = expr.Build(options)
+		            // err
+		            buf.WriteString(stmt)
+		        }
 
-	        res := buf.String()
-			if bytes.Compare(src, res) {
-	            // 崩れたよ！って教えるやつ
-				return err
-			}
-			return res
-	 */
+		        res := buf.String()
+				if bytes.Compare(src, res) {
+		            // 崩れたよ！って教えるやつ
+					return err
+				}
+				return res
+	*/
 	res, err := getFormattedStmt(exprs, options.Distance)
 	if err != nil {
 		return src, errors.Wrap(err, "getFormattedStmt failed")

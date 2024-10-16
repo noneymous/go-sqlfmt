@@ -1,11 +1,11 @@
 package parserR
 
 import (
-	"github.com/kanmu/go-sqlfmt/sqlfmt/lexer"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
 type Expr interface {
-	Build()string
+	Build() string
 }
 
 type Result struct {
@@ -19,15 +19,15 @@ func (pr *Result) Build() string {
 func ParseTokens(tokens []lexer.Token) ([]Expr, error) {
 	rslt := &Result{}
 	var (
-		idx int
-		expr Expr
+		idx      int
+		expr     Expr
 		consumed int
-		err error
+		err      error
 	)
 
 	for {
 		t := tokens[idx]
-		if rslt.endTType(t.Type){
+		if rslt.endTType(t.Type) {
 			return rslt.Values, nil
 		}
 
@@ -40,7 +40,7 @@ func ParseTokens(tokens []lexer.Token) ([]Expr, error) {
 		case lexer.EOF:
 			return rslt.Values, nil
 		}
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 
@@ -49,13 +49,12 @@ func ParseTokens(tokens []lexer.Token) ([]Expr, error) {
 	}
 }
 
-
-func (rslt *Result) append(elm Expr){
+func (rslt *Result) append(elm Expr) {
 	rslt.Values = append(rslt.Values, elm)
 }
 
 func (rslt *Result) endTType(ttype lexer.TokenType) bool {
-	if ttype == lexer.EOF{
+	if ttype == lexer.EOF {
 		return true
 	}
 	return false

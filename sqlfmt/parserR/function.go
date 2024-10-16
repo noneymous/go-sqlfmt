@@ -1,6 +1,6 @@
 package parserR
 
-//import "github.com/kanmu/go-sqlfmt/sqlfmt/lexer"
+//import "github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 //
 //type FunctionExpr struct {
 //	Values []interface{}

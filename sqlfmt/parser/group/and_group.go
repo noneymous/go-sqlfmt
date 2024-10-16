@@ -3,14 +3,14 @@ package group
 import (
 	"bytes"
 
-	"github.com/kanmu/go-sqlfmt/sqlfmt/lexer"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
 // AndGroup is AND clause not AND operator
 // AndGroup is made after new line
-//// select xxx and xxx  <= this is not AndGroup
-//// select xxx from xxx where xxx
-//// and xxx      <= this is AndGroup
+// // select xxx and xxx  <= this is not AndGroup
+// // select xxx from xxx where xxx
+// // and xxx      <= this is AndGroup
 type AndGroup struct {
 	Element     []Reindenter
 	IndentLevel int
