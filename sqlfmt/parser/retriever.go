@@ -91,7 +91,7 @@ func (r *Retriever) appendGroupsToResult() error {
 		token lexer.Token
 	)
 	for {
-		if idx > len(r.TokenSource) {
+		if idx >= len(r.TokenSource) {
 			return fmt.Errorf("the retriever may have not found the endToken")
 		}
 
@@ -105,7 +105,9 @@ func (r *Retriever) appendGroupsToResult() error {
 			if !containsEndToken(subGroupRetriever.TokenSource, subGroupRetriever.endTokenTypes) {
 				return fmt.Errorf("sub group %s has no end key word", subGroupRetriever.TokenSource[0].Value)
 			}
-			subGroupRetriever.appendGroupsToResult()
+			if err := subGroupRetriever.appendGroupsToResult(); err != nil {
+				return err
+			}
 			if err := r.appendSubGroupToResult(subGroupRetriever.result, subGroupRetriever.indentLevel); err != nil {
 				return err
 			}
