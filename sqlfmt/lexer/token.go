@@ -81,6 +81,7 @@ const (
 	OVERLAPS
 	NATURAL
 	CROSS
+	TIME
 	ZONE
 	NULLS
 	LAST
@@ -96,6 +97,8 @@ const (
 )
 
 // TokenType is an alias type that represents a kind of token
+//
+//go:generate stringer -type=TokenType
 type TokenType int
 
 // Token is a token struct
@@ -125,17 +128,17 @@ var (
 	EndOfLimitClause = []TokenType{UNION, EXCEPT, INTERSECT, EOF, ENDPARENTHESIS}
 	EndOfParenthesis = []TokenType{ENDPARENTHESIS, EOF}
 	// 微妙
-	EndOfTieClause   = []TokenType{SELECT, EOF}
-	EndOfUpdate      = []TokenType{WHERE, SET, RETURNING, EOF}
-	EndOfSet         = []TokenType{WHERE, RETURNING, EOF}
-	EndOfReturning   = []TokenType{EOF}
-	EndOfDelete      = []TokenType{WHERE, FROM, EOF}
-	EndOfInsert      = []TokenType{VALUES, EOF}
-	EndOfValues      = []TokenType{UPDATE, RETURNING, EOF}
-	EndOfFunction    = []TokenType{ENDPARENTHESIS, EOF}
-	EndOfTypeCast    = []TokenType{ENDPARENTHESIS, EOF}
-	EndOfLock        = []TokenType{EOF}
-	EndOfWith        = []TokenType{EOF}
+	EndOfTieClause = []TokenType{SELECT, EOF}
+	EndOfUpdate    = []TokenType{WHERE, SET, RETURNING, EOF}
+	EndOfSet       = []TokenType{WHERE, RETURNING, EOF}
+	EndOfReturning = []TokenType{EOF}
+	EndOfDelete    = []TokenType{WHERE, FROM, EOF}
+	EndOfInsert    = []TokenType{VALUES, EOF}
+	EndOfValues    = []TokenType{UPDATE, RETURNING, EOF}
+	EndOfFunction  = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfTypeCast  = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfLock      = []TokenType{EOF}
+	EndOfWith      = []TokenType{EOF}
 )
 
 // token types that contain the keyword to make subGroup
