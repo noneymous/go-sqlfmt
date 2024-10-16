@@ -25,7 +25,37 @@ func Tokenize(src string) ([]Token, error) {
 		return nil, errors.Wrap(err, "failed to tokenize")
 	}
 
-	return tokens, nil
+	// if "AND" or "OR" appears before/after new line, token value will be ANDGROUP, ORGROUP
+	var result []Token
+	for i, tok := range tokens {
+		if tok.Type == AND && tokens[i-1].Type == NEWLINE {
+			andGroupToken := Token{Type: ANDGROUP, Value: tok.Value}
+			result = append(result, andGroupToken)
+			continue
+		}
+		if tok.Type == AND && (tokens[i+1].Type == NEWLINE || tokens[i+2].Type == NEWLINE) {
+			andGroupToken := Token{Type: ANDGROUP, Value: tok.Value}
+			result = append(result, andGroupToken)
+			continue
+		}
+		if tok.Type == OR && tokens[i-1].Type == NEWLINE {
+			orGroupToken := Token{Type: ORGROUP, Value: tok.Value}
+			result = append(result, orGroupToken)
+			continue
+		}
+		if tok.Type == OR && (tokens[i+1].Type == NEWLINE || tokens[i+2].Type == NEWLINE) {
+			orGroupToken := Token{Type: ORGROUP, Value: tok.Value}
+			result = append(result, orGroupToken)
+			continue
+		}
+		if tok.Type == WS || tok.Type == NEWLINE {
+			continue
+		}
+		result = append(result, tok)
+	}
+
+	// return sanitized token slice
+	return result, nil
 }
 
 // scan until END OF FILE
@@ -64,7 +94,7 @@ func (t *tokenizer) firstCharacter() (rune, error) {
 	}
 
 	// unread already consumed character
-	if err = t.unread(); err != nil{
+	if err = t.unread(); err != nil {
 		return ch, err
 	}
 

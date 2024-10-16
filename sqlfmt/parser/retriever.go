@@ -36,6 +36,10 @@ func NewRetriever(tokenSource []lexer.Token) *Retriever {
 		return &Retriever{TokenSource: tokenSource, endTokenTypes: lexer.EndOfAndGroup}
 	case lexer.ORGROUP:
 		return &Retriever{TokenSource: tokenSource, endTokenTypes: lexer.EndOfOrGroup}
+	case lexer.AND:
+		return &Retriever{TokenSource: tokenSource, endTokenTypes: lexer.EndOfAndGroup}
+	case lexer.OR:
+		return &Retriever{TokenSource: tokenSource, endTokenTypes: lexer.EndOfOrGroup}
 	case lexer.GROUP:
 		return &Retriever{TokenSource: tokenSource, endTokenTypes: lexer.EndOfGroupBy}
 	case lexer.HAVING:
@@ -270,6 +274,10 @@ func createGroup(tokenSource []group.Reindenter) group.Reindenter {
 	case lexer.ANDGROUP:
 		return &group.AndGroup{Element: tokenSource}
 	case lexer.ORGROUP:
+		return &group.OrGroup{Element: tokenSource}
+	case lexer.AND:
+		return &group.AndGroup{Element: tokenSource}
+	case lexer.OR:
 		return &group.OrGroup{Element: tokenSource}
 	case lexer.GROUP:
 		return &group.GroupBy{Element: tokenSource}
