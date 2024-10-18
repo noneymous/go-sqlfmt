@@ -22,7 +22,7 @@ func (j *Join) Reindent(buf *bytes.Buffer) error {
 		if token, ok := v.(lexer.Token); ok {
 			writeJoin(buf, token, j.IndentLevel, i == 0)
 		} else {
-			v.Reindent(buf)
+			_ = v.Reindent(buf)
 		}
 	}
 	return nil

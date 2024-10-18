@@ -24,10 +24,10 @@ func (p *Parenthesis) Reindent(buf *bytes.Buffer) error {
 	}
 	for i, el := range elements {
 		if token, ok := el.(lexer.Token); ok {
-			hasStartBefore = (i == 1)
+			hasStartBefore = i == 1
 			writeParenthesis(buf, token, p.IndentLevel, p.ColumnCount, p.InColumnArea, hasStartBefore)
 		} else {
-			el.Reindent(buf)
+			_ = el.Reindent(buf)
 		}
 	}
 

@@ -1,51 +1,37 @@
 package parser
 
 import (
+	"fmt"
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 	"github.com/noneymous/go-sqlfmt/sqlfmt/parser/group"
-	"github.com/pkg/errors"
 )
 
-// TODO: calling each Retrieve function is not smart, so should be refactored
-
-// Parser parses Token Source
-type parser struct {
-	offset int
-	result []group.Reindenter
-	err    error
-}
-
-// ParseTokens parses Tokens, creating slice of Reindenter
-// each Reindenter is group of SQL Clause such as SelectGroup, FromGroup ...etc
+// ParseTokens parses a sequence of tokens returning a slice of Reindenter.
+// Each Reindenter is an SQL segment (group of SQL clauses) such as SelectGroup, FromGroup, etc..
 func ParseTokens(tokens []lexer.Token) ([]group.Reindenter, error) {
-	if !isSQL(tokens[0].Type) {
-		return nil, errors.New("can not parse no sql statement")
+
+	// Check if tokenized string is actually an SQL query
+	if !isSql(tokens[0].Type) {
+		return nil, fmt.Errorf("invalid sql statement")
 	}
 
-	var (
-		offset int
-		result []group.Reindenter
-	)
-
-	for {
-		if tokens[offset].Type == lexer.EOF {
-			break
-		}
-
-		r := NewRetriever(tokens[offset:])
-		element, endIdx, err := r.Retrieve()
-		if err != nil {
-			return nil, errors.Wrap(err, "ParseTokens failed")
-		}
-
-		group := createGroup(element)
-		result = append(result, group)
-
-		offset += endIdx
+	// Prepare retriever for segment
+	retriever, errRetriever := NewRetriever(tokens)
+	if errRetriever != nil {
+		return nil, errRetriever
 	}
+
+	// Process tokens
+	result, errProcess := retriever.Process()
+	if errProcess != nil {
+		return nil, errProcess
+	}
+
+	// Return process result
 	return result, nil
 }
 
-func isSQL(ttype lexer.TokenType) bool {
-	return ttype == lexer.SELECT || ttype == lexer.UPDATE || ttype == lexer.DELETE || ttype == lexer.INSERT || ttype == lexer.LOCK || ttype == lexer.WITH
+// isSql returns true if token type is valid SQL opening keyword
+func isSql(ttype lexer.TokenType) bool {
+	return ttype == lexer.SELECT || ttype == lexer.UPDATE || ttype == lexer.DELETE || ttype == lexer.INSERT || ttype == lexer.LOCK || ttype == lexer.WITH || ttype == lexer.SET
 }

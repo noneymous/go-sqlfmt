@@ -27,7 +27,7 @@ func (a *AndGroup) Reindent(buf *bytes.Buffer) error {
 		if token, ok := el.(lexer.Token); ok {
 			write(buf, token, a.IndentLevel)
 		} else {
-			el.Reindent(buf)
+			_ = el.Reindent(buf)
 		}
 	}
 	return nil

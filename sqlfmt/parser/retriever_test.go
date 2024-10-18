@@ -17,7 +17,7 @@ func TestNewRetriever(t *testing.T) {
 		{Type: lexer.IDENT, Value: "user"},
 		{Type: lexer.EOF, Value: "EOF"},
 	}
-	r := NewRetriever(testingData)
+	r, _ := NewRetriever(testingData)
 	want := []lexer.Token{
 		{Type: lexer.SELECT, Value: "SELECT"},
 		{Type: lexer.IDENT, Value: "name"},
@@ -27,7 +27,7 @@ func TestNewRetriever(t *testing.T) {
 		{Type: lexer.IDENT, Value: "user"},
 		{Type: lexer.EOF, Value: "EOF"},
 	}
-	got := r.TokenSource
+	got := r.tokens
 
 	if !reflect.DeepEqual(want, got) {
 		t.Fatalf("initialize retriever failed: want %#v got %#v", want, got)
@@ -111,26 +111,29 @@ func TestRetrieve(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var (
-				gotStmt    []string
-				gotLastIdx int
-			)
-			r := &Retriever{TokenSource: tt.source, endTokenTypes: tt.endTokenTypes}
-			reindenters, gotLastIdx, err := r.Retrieve()
+
+			// Prepare retriever with test data
+			r := &Retriever{tokens: tt.source, endTypes: tt.endTokenTypes}
+
+			// Process test retriever
+			endIdx, err := r.processSegment()
 			if err != nil {
 				t.Errorf("ERROR:%#v", err)
 			}
 
-			for _, v := range reindenters {
+			// Convert token sequence to string sequence
+			var gotStmt []string
+			for _, v := range r.result {
 				if tok, ok := v.(lexer.Token); ok {
 					gotStmt = append(gotStmt, tok.Value)
 				}
 			}
 
+			// Evaluate string sequence (retriever results) and last index as expected
 			if !reflect.DeepEqual(gotStmt, tt.want.stmt) {
 				t.Errorf("want %v, got %v", tt.want.stmt, gotStmt)
-			} else if gotLastIdx != tt.want.lastIdx {
-				t.Errorf("want %v, got %v", tt.want.lastIdx, gotLastIdx)
+			} else if endIdx != tt.want.lastIdx {
+				t.Errorf("want %v, got %v", tt.want.lastIdx, endIdx)
 			}
 		})
 	}

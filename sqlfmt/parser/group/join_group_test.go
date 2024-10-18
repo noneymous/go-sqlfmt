@@ -26,7 +26,7 @@ func TestReindentJoinGroup(t *testing.T) {
 				lexer.Token{Type: lexer.IDENT, Value: "status2"},
 			},
 
-			want: "\nLEFT OUTER JOIN sometable\nON status1 = status2",
+			want: "\nLEFT OUTER JOIN sometable ON status1 = status2",
 		},
 	}
 	for _, tt := range tests {

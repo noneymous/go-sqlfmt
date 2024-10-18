@@ -28,7 +28,7 @@ func (o *OrderBy) Reindent(buf *bytes.Buffer) error {
 				return err
 			}
 		case Reindenter:
-			v.Reindent(buf)
+			_ = v.Reindent(buf)
 		}
 	}
 	return nil

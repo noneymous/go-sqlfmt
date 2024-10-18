@@ -22,7 +22,7 @@ func (val *Values) Reindent(buf *bytes.Buffer) error {
 		if token, ok := el.(lexer.Token); ok {
 			write(buf, token, val.IndentLevel)
 		} else {
-			el.Reindent(buf)
+			_ = el.Reindent(buf)
 		}
 	}
 	return nil

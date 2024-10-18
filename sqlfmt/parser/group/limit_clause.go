@@ -22,7 +22,7 @@ func (l *LimitClause) Reindent(buf *bytes.Buffer) error {
 		if token, ok := el.(lexer.Token); ok {
 			write(buf, token, l.IndentLevel)
 		} else {
-			el.Reindent(buf)
+			_ = el.Reindent(buf)
 		}
 	}
 	return nil

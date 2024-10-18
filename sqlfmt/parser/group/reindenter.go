@@ -79,7 +79,7 @@ func writeSelect(buf *bytes.Buffer, el interface{}, indent int) error {
 			buf.WriteString(fmt.Sprintf("%s%s", WhiteSpace, token.Value))
 			columnCount++
 		case lexer.COMMA:
-			buf.WriteString(fmt.Sprintf("%s%s%s%s", NewLine, strings.Repeat(DoubleWhiteSpace, indent), DoubleWhiteSpace, token.Value))
+			buf.WriteString(fmt.Sprintf("%s%s%s%s", token.Value, NewLine, strings.Repeat(DoubleWhiteSpace, indent), WhiteSpace))
 		default:
 			return fmt.Errorf("can not reindent %#v", token.Value)
 		}
@@ -136,7 +136,7 @@ func writeJoin(buf *bytes.Buffer, token lexer.Token, indent int, isFirst bool) {
 	case isFirst && token.IsJoinStart():
 		buf.WriteString(fmt.Sprintf("%s%s%s", NewLine, strings.Repeat(DoubleWhiteSpace, indent), token.Value))
 	case token.Type == lexer.ON || token.Type == lexer.USING:
-		buf.WriteString(fmt.Sprintf("%s%s%s", NewLine, strings.Repeat(DoubleWhiteSpace, indent), token.Value))
+		buf.WriteString(fmt.Sprintf(" %s", token.Value))
 	case strings.HasPrefix(token.Value, "::"):
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:

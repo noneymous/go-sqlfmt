@@ -6,8 +6,6 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-
-	"github.com/pkg/errors"
 )
 
 // Options for go-sqlfmt
@@ -17,25 +15,32 @@ type Options struct {
 
 // Process formats SQL statement in .go file
 func Process(filename string, src []byte, options *Options) ([]byte, error) {
-	fset := token.NewFileSet()
-	parserMode := parser.ParseComments
 
-	f, err := parser.ParseFile(fset, filename, src, parserMode)
-	if err != nil {
-		return nil, errors.Wrap(err, "parser.ParseFile failed")
+	// Prepare file set
+	fileSet := token.NewFileSet()
+
+	// Parse files
+	f, errParse := parser.ParseFile(fileSet, filename, src, parser.ParseComments)
+	if errParse != nil {
+		return nil, errParse
 	}
 
+	// Replace ast nodes in the file with formatted SQL
 	Replace(f, options)
 
+	// Prepare
 	var buf bytes.Buffer
 
-	if err = printer.Fprint(&buf, fset, f); err != nil {
-		return nil, errors.Wrap(err, "printer.Fprint failed")
+	if errPrint := printer.Fprint(&buf, fileSet, f); errPrint != nil {
+		return nil, errPrint
 	}
 
-	out, err := format.Source(buf.Bytes())
-	if err != nil {
-		return nil, errors.Wrap(err, "format.Source failed")
+	// Format buffer
+	out, errSource := format.Source(buf.Bytes())
+	if errSource != nil {
+		return nil, errSource
 	}
+
+	// Return output
 	return out, nil
 }

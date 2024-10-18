@@ -6,8 +6,38 @@
 ## Description
 
 The sqlfmt formats PostgreSQL statements in `.go` files into a consistent style.
+It can also be called directly to format SQL strings.
 
-## Example
+This is a fork of https://github.com/kanmu/go-sqlfmt which seems to abandoned. 
+Some of its open pull requests were applied too.
+
+## Example Direct Call
+
+```go
+
+import "github.com/noneymous/go-sqlfmt/sqlfmt"
+
+sql := `
+  select xxx ,xxx ,xxx
+  , case
+  when xxx is null then xxx
+  else true
+  end as xxx
+  from xxx as xxx join xxx on xxx = xxx join xxx as xxx on xxx = xxx
+  left outer join xxx as xxx
+  on xxx = xxx
+  where xxx in ( select xxx from ( select xxx from xxx ) as xxx where xxx = xxx )
+  order by xxx
+`
+
+sqlFormatted, errFormat := sqlfmt.Format(sql, &sqlfmt.Options{})
+if errFormat != nil {
+    return
+}
+
+```
+
+## Example .go File
 
 _Unformatted SQL in a `.go` file_
 
@@ -89,7 +119,7 @@ go get github.com/noneymous/go-sqlfmt/cmd/sqlfmt
 ```
 ## Usage
 
-- Provide flags and input files or directory  
+Provide flags and input files or directory  
   ```bash
   $ sqlfmt -w input_file.go 
   ```
@@ -150,16 +180,16 @@ go get github.com/noneymous/go-sqlfmt/cmd/sqlfmt
 - `WITHIN GROUP`
 - `DISTINCT ON(xxx)`
 - `select(array)`
-- Comments after commna such as 
+- Comments after comma such as 
 `select xxxx, --comment
         xxxx
 `
 - Nested square brackets or braces such as `[[xx], xx]`
-  - Currently being formatted into this: `[[ xx], xx]`
+  - Currently, being formatted into this: `[[ xx], xx]`
   - Ideally, it should be formatted into this: `[[xx], xx]`
 
 - Nested functions such as `sum(average(xxx))`
-  - Currently being formatted into this: `SUM( AVERAGE(xxx))`
+  - Currently, being formatted into this: `SUM( AVERAGE(xxx))`
   - Ideally, it should be formatted into this: `SUM(AVERAGE(xxx))`
   
  
@@ -173,12 +203,6 @@ go get github.com/noneymous/go-sqlfmt/cmd/sqlfmt
 
 Thank you for thinking of contributing to the sqlfmt!
 Pull Requests are welcome!
-
-1. Fork ([https://github.com/noneymous/go-sqlfmt))
-2. Create a feature branch
-3. Commit your changes
-4. Rebase your local changes against the master branch
-5. Create new Pull Request
 
 ## License
 

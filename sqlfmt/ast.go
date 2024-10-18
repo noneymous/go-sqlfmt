@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-// Replace replace ast node with formatted SQL statement
+// Replace replaces ast node with formatted SQL statement
 func Replace(f *ast.File, options *Options) {
 	ast.Inspect(f, func(n ast.Node) bool {
 		sql, found := findSQL(n)

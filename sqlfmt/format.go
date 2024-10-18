@@ -7,89 +7,102 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 	"github.com/noneymous/go-sqlfmt/sqlfmt/parser"
 	"github.com/noneymous/go-sqlfmt/sqlfmt/parser/group"
-	"github.com/pkg/errors"
 	"strings"
 )
 
 // Format parse tokens, and build
-func Format(src string, options *Options) (string, error) {
-	// 最初と最後を取り除く的な事をする ` or "
-	tokens, err := lexer.Tokenize(src)
-	if err != nil {
-		return src, errors.Wrap(err, "Tokenize failed")
+func Format(sql string, options *Options) (string, error) {
+
+	// Tokenize SQL query string
+	tokens, errTokens := lexer.Tokenize(sql)
+	if errTokens != nil {
+		return "", fmt.Errorf("tokenization error: %w", errTokens)
 	}
 
-	exprs, err := parser.ParseTokens(tokens)
-	if err != nil {
-		return src, errors.Wrap(err, "ParseTokens failed")
+	// Parse tokens and group them into a sequence of query segments
+	tokensParsed, errTokensParsed := parser.ParseTokens(tokens)
+	if errTokensParsed != nil {
+		return "", fmt.Errorf("parse error: %w", errTokensParsed)
 	}
 
-	/*
-		        var buf &bytes.Buffer{}
-		        for _, expr := range exprs {
-		            stmt, err = expr.Build(options)
-		            // err
-		            buf.WriteString(stmt)
-		        }
-
-		        res := buf.String()
-				if bytes.Compare(src, res) {
-		            // 崩れたよ！って教えるやつ
-					return err
-				}
-				return res
-	*/
-	res, err := getFormattedStmt(exprs, options.Distance)
-	if err != nil {
-		return src, errors.Wrap(err, "getFormattedStmt failed")
+	// Format parsed tokens into prettified and uniformly formatted SQL string
+	sqlFormatted, errFormat := generateFormattedStmt(tokensParsed, options.Distance)
+	if errFormat != nil {
+		return "", fmt.Errorf("format error: %w", errFormat)
 	}
 
-	if !compare(src, res) {
-		return src, fmt.Errorf("the formatted statement has diffed from the source")
+	// Safety check, compare if formatted query still has the same logic as input
+	if !compare(sql, sqlFormatted) {
+		return "", fmt.Errorf("an internal error has occurred")
 	}
-	return res, nil
+
+	// Return successfully formatted SQL string
+	return sqlFormatted, nil
 }
 
-func getFormattedStmt(rs []group.Reindenter, distance int) (string, error) {
+// generateFormattedStmt turns a sequence of parsed token groups into a formatted string.
+func generateFormattedStmt(tokensParsed []group.Reindenter, leftPadding int) (string, error) {
+
+	// Prepare buffer
 	var buf bytes.Buffer
 
-	for _, r := range rs {
-		if err := r.Reindent(&buf); err != nil {
-			return "", errors.Wrap(err, "Reindent failed")
+	// Iterate parsed tokens and reindent accordingly
+	for _, token := range tokensParsed {
+		if err := token.Reindent(&buf); err != nil {
+			return "", err
 		}
 	}
 
-	if distance != 0 {
-		return putDistance(buf.String(), distance), nil
+	// Get formatted SQL string
+	sqlFormatted := buf.String()
+
+	// Add left spacing if desired
+	if leftPadding == 0 {
+		sqlFormatted = putDistance(sqlFormatted, leftPadding)
 	}
-	return buf.String(), nil
+
+	// Return generated string
+	return sqlFormatted, nil
 }
 
-func putDistance(src string, distance int) string {
-	scanner := bufio.NewScanner(strings.NewReader(src))
+func putDistance(s string, leftPadding int) string {
 
+	// Prepare result string
 	var result string
+
+	// Prepare scanner
+	scanner := bufio.NewScanner(strings.NewReader(s))
+
+	// Scan over input string and format accordingly
 	for scanner.Scan() {
-		result += fmt.Sprintf("%s%s%s", strings.Repeat(group.WhiteSpace, distance), scanner.Text(), "\n")
+		result += fmt.Sprintf("%s%s%s", strings.Repeat(group.WhiteSpace, leftPadding), scanner.Text(), "\n")
 	}
+
+	// Return result
 	return result
 }
 
-// returns false if the value of formatted statement  (without any space) differs from source statement
+// compare returns false if the value of formatted statement (without any space, tab or newline symbols)
+// differs from source statement
 func compare(src string, res string) bool {
-	before := removeSpace(src)
-	after := removeSpace(res)
 
+	// Unify inputs
+	before := removeSymbol(src)
+	after := removeSymbol(res)
+
+	// Compare strings
 	if v := strings.Compare(before, after); v != 0 {
 		return false
 	}
+
+	// Return true if strings were equal
 	return true
 }
 
-// removes whitespaces and new lines from src
-func removeSpace(src string) string {
+// removeSymbol removes whitespaces, tabs and newlines from string
+func removeSymbol(s string) string {
 	var result []rune
-	for _, r := range src {
+	for _, r := range s {
 		if string(r) == "\n" || string(r) == " " || string(r) == "\t" || string(r) == "　" {
 			continue
 		}

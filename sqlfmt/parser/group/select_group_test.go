@@ -21,7 +21,7 @@ func TestReindentSelectGroup(t *testing.T) {
 				lexer.Token{Type: lexer.COMMA, Value: ","},
 				lexer.Token{Type: lexer.IDENT, Value: "age"},
 			},
-			want: "\nSELECT\n  name\n  , age",
+			want: "\nSELECT\n  name,\n  age",
 		},
 	}
 	for _, tt := range tests {

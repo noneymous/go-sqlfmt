@@ -27,8 +27,8 @@ func (s *Select) Reindent(buf *bytes.Buffer) error {
 	for i, element := range elements {
 		switch v := element.(type) {
 		case lexer.Token, string:
-			if err := writeSelect(buf, element, s.IndentLevel); err != nil {
-				return errors.Wrap(err, "writeSelect failed")
+			if errWrite := writeSelect(buf, element, s.IndentLevel); errWrite != nil {
+				return errors.Wrap(errWrite, "writeSelect failed")
 			}
 		case *Case:
 			if tok, ok := elements[i-1].(lexer.Token); ok {
@@ -36,31 +36,31 @@ func (s *Select) Reindent(buf *bytes.Buffer) error {
 					v.hasCommaBefore = true
 				}
 			}
-			v.Reindent(buf)
+			_ = v.Reindent(buf)
 			// Case group in Select clause must be in column area
 			columnCount++
 		case *Parenthesis:
 			v.InColumnArea = true
 			v.ColumnCount = columnCount
-			v.Reindent(buf)
+			_ = v.Reindent(buf)
 			columnCount++
 		case *Subquery:
 			if token, ok := elements[i-1].(lexer.Token); ok {
 				if token.Type == lexer.EXISTS {
-					v.Reindent(buf)
+					_ = v.Reindent(buf)
 					continue
 				}
 			}
 			v.InColumnArea = true
 			v.ColumnCount = columnCount
-			v.Reindent(buf)
+			_ = v.Reindent(buf)
 		case *Function:
 			v.InColumnArea = true
 			v.ColumnCount = columnCount
-			v.Reindent(buf)
+			_ = v.Reindent(buf)
 			columnCount++
 		case Reindenter:
-			v.Reindent(buf)
+			_ = v.Reindent(buf)
 			columnCount++
 		default:
 			return fmt.Errorf("can not reindent %#v", v)
