@@ -1,11 +1,13 @@
 package sqlfmt
 
 import (
+	"bufio"
 	"bytes"
-	"go/format"
-	"go/parser"
-	"go/printer"
-	"go/token"
+	"fmt"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/parser"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/parser/group"
+	"strings"
 )
 
 // Options for go-sqlfmt
@@ -13,34 +15,103 @@ type Options struct {
 	Distance int
 }
 
-// Process formats SQL statement in .go file
-func Process(filename string, src []byte, options *Options) ([]byte, error) {
+// Format parse tokens, and build
+func Format(sql string, options *Options) (string, error) {
 
-	// Prepare file set
-	fileSet := token.NewFileSet()
-
-	// Parse files
-	f, errParse := parser.ParseFile(fileSet, filename, src, parser.ParseComments)
-	if errParse != nil {
-		return nil, errParse
+	// Tokenize SQL query string
+	tokens, errTokens := lexer.Tokenize(sql)
+	if errTokens != nil {
+		return "", fmt.Errorf("tokenization error: %w", errTokens)
 	}
 
-	// Replace ast nodes in the file with formatted SQL
-	Replace(f, options)
+	// Parse tokens and group them into a sequence of query segments
+	tokensParsed, errTokensParsed := parser.ParseTokens(tokens)
+	if errTokensParsed != nil {
+		return "", fmt.Errorf("parse error: %w", errTokensParsed)
+	}
 
-	// Prepare
+	// Format parsed tokens into prettified and uniformly formatted SQL string
+	sqlFormatted, errFormat := generateFormattedStmt(tokensParsed, options.Distance)
+	if errFormat != nil {
+		return "", fmt.Errorf("format error: %w", errFormat)
+	}
+
+	// Safety check, compare if formatted query still has the same logic as input
+	if !compare(sql, sqlFormatted) {
+		return "", fmt.Errorf("an internal error has occurred")
+	}
+
+	// Return successfully formatted SQL string
+	return sqlFormatted, nil
+}
+
+// generateFormattedStmt turns a sequence of parsed token groups into a formatted string.
+func generateFormattedStmt(tokensParsed []group.Reindenter, leftPadding int) (string, error) {
+
+	// Prepare buffer
 	var buf bytes.Buffer
 
-	if errPrint := printer.Fprint(&buf, fileSet, f); errPrint != nil {
-		return nil, errPrint
+	// Iterate parsed tokens and reindent accordingly
+	for _, token := range tokensParsed {
+		if err := token.Reindent(&buf); err != nil {
+			return "", err
+		}
 	}
 
-	// Format buffer
-	out, errSource := format.Source(buf.Bytes())
-	if errSource != nil {
-		return nil, errSource
+	// Get formatted SQL string
+	sqlFormatted := strings.Trim(buf.String(), "\n")
+
+	// Add left spacing if desired
+	if leftPadding == 0 {
+		sqlFormatted = putDistance(sqlFormatted, leftPadding)
 	}
 
-	// Return output
-	return out, nil
+	// Return generated string
+	return sqlFormatted, nil
+}
+
+func putDistance(s string, leftPadding int) string {
+
+	// Prepare result string
+	var result []string
+
+	// Prepare scanner
+	scanner := bufio.NewScanner(strings.NewReader(s))
+
+	// Scan over input string and format accordingly
+	for scanner.Scan() {
+		result = append(result, fmt.Sprintf("%s%s", strings.Repeat(group.WhiteSpace, leftPadding), scanner.Text()))
+	}
+
+	// Return result
+	return strings.Join(result, "\n")
+}
+
+// compare returns false if the value of formatted statement (without any space, tab or newline symbols)
+// differs from source statement
+func compare(src string, res string) bool {
+
+	// Unify inputs
+	before := removeSymbol(src)
+	after := removeSymbol(res)
+
+	// Compare strings
+	if v := strings.Compare(before, after); v != 0 {
+		return false
+	}
+
+	// Return true if strings were equal
+	return true
+}
+
+// removeSymbol removes whitespaces, tabs and newlines from string
+func removeSymbol(s string) string {
+	var result []rune
+	for _, r := range s {
+		if string(r) == "\n" || string(r) == " " || string(r) == "\t" || string(r) == "　" {
+			continue
+		}
+		result = append(result, r)
+	}
+	return strings.ToLower(string(result))
 }

@@ -1,4 +1,4 @@
-package sqlformatter
+package testdata
 
 import (
 	"net/url"

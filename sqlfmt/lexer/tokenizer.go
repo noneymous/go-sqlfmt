@@ -167,19 +167,30 @@ func (t *tokenizer) scan() (Token, error) {
 			}
 		}
 
-		// Check if value is keyword
-		valUpper := strings.ToUpper(buf.String())
-		if ttype, ok := keywordMap[valUpper]; ok {
+		// Get token key and value
+		key := strings.ToUpper(buf.String())
+		val := key
 
-			// Return looked-up token type
+		// Sanitize key and value, if they include a target operator '.'.
+		// If token value contains period, it's specifying a target, e.g. a table. Drop that for the lookup.
+		if strings.Contains(buf.String(), ".") {
+			slice := strings.Split(buf.String(), ".")
+			key = strings.ToUpper(slice[len(slice)-1])
+			val = strings.Join(slice[:len(slice)-1], ".") + "." + key
+		}
+
+		// Check if value is keyword
+		if ttype, ok := keywordMap[key]; ok {
+
+			// Return looked-up token type, if it's not a function
 			if ttype != FUNCTION {
-				return Token{Type: ttype, Value: valUpper}, nil
+				return Token{Type: ttype, Value: val}, nil
 			}
 
 			// Resolve ambiguity between arguments and function names. E.g. "sum" might be a function or a
-			// column name. Check if parenthesis follows and decide whether to return keyword or value token.
+			// column name. If parenthesis follows, it's definitely a function name, rather than a column name.
 			if t.peekSubsequent(isParenthesisStart) {
-				return Token{Type: ttype, Value: valUpper}, nil // Return looked-up token type, since value is a function
+				return Token{Type: FUNCTION, Value: val}, nil // Return looked-up token type, since value is a function
 			} else {
 				return Token{Type: IDENT, Value: buf.String()}, nil // Return IDENT token type, since value is not a function
 			}
@@ -359,46 +370,47 @@ var keywordMap = map[string]TokenType{
 	"ZEROBLOB":                  FUNCTION,
 
 	// Additional PostgreSQL functions
-	"BTRIM":                FUNCTION,
-	"CHAR_LENGTH":          FUNCTION,
-	"CHARACTER_LENGTH":     FUNCTION,
-	"INITCAP":              FUNCTION,
-	"LENGTH":               FUNCTION,
-	"LOWER":                FUNCTION,
-	"LPAD":                 FUNCTION,
-	"LTRIM":                FUNCTION,
-	"REPEAT":               FUNCTION,
-	"REPLACE":              FUNCTION,
-	"RPAD":                 FUNCTION,
-	"RTRIM":                FUNCTION,
-	"STRPOS":               FUNCTION,
-	"TRANSLATE":            FUNCTION,
-	"UPPER":                FUNCTION,
-	"ABS":                  FUNCTION,
-	"CEIL":                 FUNCTION,
-	"CEILING":              FUNCTION,
-	"DIV":                  FUNCTION,
-	"EXP":                  FUNCTION,
-	"FLOOR":                FUNCTION,
-	"MOD":                  FUNCTION,
-	"POWER":                FUNCTION,
-	"ROUND":                FUNCTION,
-	"SETSEED":              FUNCTION,
-	"SIGN":                 FUNCTION,
-	"SQRT":                 FUNCTION,
-	"TRUNC":                FUNCTION,
-	"AGE":                  FUNCTION,
-	"CURRENT_DATE":         FUNCTION,
-	"CURRENT_TIME":         FUNCTION,
-	"CURRENT_TIMESTAMP":    FUNCTION,
-	"LOCALTIME":            FUNCTION,
-	"LOCALTIMESTAMP":       FUNCTION,
-	"NOW":                  FUNCTION,
-	"TO_CHAR":              FUNCTION,
-	"TO_DATE":              FUNCTION,
-	"TO_NUMBER":            FUNCTION,
-	"HAS_TABLE_PRIVILEGE":  FUNCTION,
-	"HAS_SCHEMA_PRIVILEGE": FUNCTION,
+	"BTRIM":                  FUNCTION,
+	"CHAR_LENGTH":            FUNCTION,
+	"CHARACTER_LENGTH":       FUNCTION,
+	"INITCAP":                FUNCTION,
+	"LENGTH":                 FUNCTION,
+	"LOWER":                  FUNCTION,
+	"LPAD":                   FUNCTION,
+	"LTRIM":                  FUNCTION,
+	"REPEAT":                 FUNCTION,
+	"REPLACE":                FUNCTION,
+	"RPAD":                   FUNCTION,
+	"RTRIM":                  FUNCTION,
+	"STRPOS":                 FUNCTION,
+	"TRANSLATE":              FUNCTION,
+	"UPPER":                  FUNCTION,
+	"ABS":                    FUNCTION,
+	"CEIL":                   FUNCTION,
+	"CEILING":                FUNCTION,
+	"DIV":                    FUNCTION,
+	"EXP":                    FUNCTION,
+	"FLOOR":                  FUNCTION,
+	"MOD":                    FUNCTION,
+	"POWER":                  FUNCTION,
+	"ROUND":                  FUNCTION,
+	"SETSEED":                FUNCTION,
+	"SIGN":                   FUNCTION,
+	"SQRT":                   FUNCTION,
+	"TRUNC":                  FUNCTION,
+	"AGE":                    FUNCTION,
+	"CURRENT_DATE":           FUNCTION,
+	"CURRENT_TIME":           FUNCTION,
+	"CURRENT_TIMESTAMP":      FUNCTION,
+	"LOCALTIME":              FUNCTION,
+	"LOCALTIMESTAMP":         FUNCTION,
+	"NOW":                    FUNCTION,
+	"TO_CHAR":                FUNCTION,
+	"TO_DATE":                FUNCTION,
+	"TO_NUMBER":              FUNCTION,
+	"HAS_TABLE_PRIVILEGE":    FUNCTION,
+	"HAS_SCHEMA_PRIVILEGE":   FUNCTION,
+	"HAS_DATABASE_PRIVILEGE": FUNCTION,
 
 	// Additional Oracle functions
 	"ACOS":                         FUNCTION,

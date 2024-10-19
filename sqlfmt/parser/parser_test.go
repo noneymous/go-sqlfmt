@@ -263,7 +263,7 @@ func TestParseTokens(t *testing.T) {
 			t.Errorf("ERROR: %#v", err)
 		}
 		if !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("\nwant %#v, \ngot %#v", tt.want, got)
+			t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
 		}
 	}
 }

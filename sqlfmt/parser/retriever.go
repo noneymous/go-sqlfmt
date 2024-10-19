@@ -273,7 +273,7 @@ func (r *Retriever) isNewSegment(idx int) (bool, int) {
 		return false, 0
 	}
 
-	// Check if token is parenthesis opening sub query, indicating subsegment
+	// Check if token is parenthesis opening sub query, indicating subsegment and give it extra indent
 	if tokenCurrent.Type == lexer.STARTPARENTHESIS && tokenNext.Type == lexer.SELECT {
 		return true, r.indentLevel + 1
 	}

@@ -1,4 +1,4 @@
-package sqlfmt
+package testdata
 
 import (
 	"database/sql"
