@@ -10,12 +10,12 @@ import (
 func TestReindentUnionGroup(t *testing.T) {
 	tests := []struct {
 		name        string
-		tokenSource []Reindenter
+		tokenSource []lexer.Reindenter
 		want        string
 	}{
 		{
 			name: "normal case1",
-			tokenSource: []Reindenter{
+			tokenSource: []lexer.Reindenter{
 				lexer.Token{Type: lexer.UNION, Value: "UNION"},
 				lexer.Token{Type: lexer.ALL, Value: "ALL"},
 			},
@@ -23,14 +23,14 @@ func TestReindentUnionGroup(t *testing.T) {
 		},
 		{
 			name: "normal case2",
-			tokenSource: []Reindenter{
+			tokenSource: []lexer.Reindenter{
 				lexer.Token{Type: lexer.INTERSECT, Value: "INTERSECT"},
 			},
 			want: "\nINTERSECT",
 		},
 		{
 			name: "normal case3",
-			tokenSource: []Reindenter{
+			tokenSource: []lexer.Reindenter{
 				lexer.Token{Type: lexer.EXCEPT, Value: "EXCEPT"},
 			},
 			want: "\nEXCEPT",
@@ -38,12 +38,12 @@ func TestReindentUnionGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		buf := &bytes.Buffer{}
-		unionGroup := &TieClause{Element: tt.tokenSource}
+		el := &TieClause{Element: tt.tokenSource}
 
-		unionGroup.Reindent(buf)
+		_ = el.Reindent(buf, lexer.Token{})
 		got := buf.String()
 		if tt.want != got {
-			t.Errorf("want%#v, got %#v", tt.want, got)
+			t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
 		}
 	}
 }

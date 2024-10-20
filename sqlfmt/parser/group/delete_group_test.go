@@ -10,12 +10,12 @@ import (
 func TestReindentDeleteGroup(t *testing.T) {
 	tests := []struct {
 		name        string
-		tokenSource []Reindenter
+		tokenSource []lexer.Reindenter
 		want        string
 	}{
 		{
 			name: "normal case",
-			tokenSource: []Reindenter{
+			tokenSource: []lexer.Reindenter{
 				lexer.Token{Type: lexer.DELETE, Value: "DELETE"},
 				lexer.Token{Type: lexer.FROM, Value: "FROM"},
 				lexer.Token{Type: lexer.IDENT, Value: "xxxxxx"},
@@ -25,12 +25,12 @@ func TestReindentDeleteGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		buf := &bytes.Buffer{}
-		deleteGroup := &Delete{Element: tt.tokenSource}
+		el := &Delete{Element: tt.tokenSource}
 
-		deleteGroup.Reindent(buf)
+		_ = el.Reindent(buf, lexer.Token{})
 		got := buf.String()
 		if tt.want != got {
-			t.Errorf("want%#v, got %#v", tt.want, got)
+			t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
 		}
 	}
 }

@@ -8,12 +8,12 @@ import (
 
 // GroupBy clause
 type GroupBy struct {
-	Element     []Reindenter
+	Element     []lexer.Reindenter
 	IndentLevel int
 }
 
 // Reindent reindents its elements
-func (g *GroupBy) Reindent(buf *bytes.Buffer) error {
+func (g *GroupBy) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
 	columnCount = 0
 
 	elements, err := processPunctuation(g.Element)
@@ -21,16 +21,23 @@ func (g *GroupBy) Reindent(buf *bytes.Buffer) error {
 		return err
 	}
 
+	var lastToken lexer.Token
 	for _, el := range separate(elements) {
 		switch v := el.(type) {
 		case lexer.Token, string:
 			if err := writeWithComma(buf, v, g.IndentLevel); err != nil {
 				return err
 			}
-		case Reindenter:
-			_ = v.Reindent(buf)
+		case lexer.Reindenter:
+			_ = v.Reindent(buf, lastToken)
+		}
+
+		// Remember last Token element
+		if token, ok := el.(lexer.Token); ok {
+			lastToken = token
 		}
 	}
+
 	return nil
 }
 

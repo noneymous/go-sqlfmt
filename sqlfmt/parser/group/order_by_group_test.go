@@ -10,12 +10,12 @@ import (
 func TestReindentOrderByGroup(t *testing.T) {
 	tests := []struct {
 		name        string
-		tokenSource []Reindenter
+		tokenSource []lexer.Reindenter
 		want        string
 	}{
 		{
 			name: "normalcase",
-			tokenSource: []Reindenter{
+			tokenSource: []lexer.Reindenter{
 				lexer.Token{Type: lexer.ORDER, Value: "ORDER"},
 				lexer.Token{Type: lexer.BY, Value: "BY"},
 				lexer.Token{Type: lexer.IDENT, Value: "xxxxxx"},
@@ -25,12 +25,12 @@ func TestReindentOrderByGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		buf := &bytes.Buffer{}
-		orderByGroup := &OrderBy{Element: tt.tokenSource}
+		el := &OrderBy{Element: tt.tokenSource}
 
-		orderByGroup.Reindent(buf)
+		_ = el.Reindent(buf, lexer.Token{})
 		got := buf.String()
 		if tt.want != got {
-			t.Errorf("want%#v, got %#v", tt.want, got)
+			t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
 		}
 	}
 }

@@ -26,7 +26,7 @@ func sendSQL() int {
 	var id int
 	var db *sql.DB
 	db.QueryRow(` + "`" + `SELECT
-  any (
+  ANY (
     SELECT
       xxx
     FROM xxx

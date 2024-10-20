@@ -11,7 +11,7 @@ import (
 )
 
 // separate elements by comma and the reserved word in select clause
-func separate(rs []Reindenter) []interface{} {
+func separate(rs []lexer.Reindenter) []interface{} {
 	var (
 		result           []interface{}
 		skipRange, count int
@@ -64,9 +64,9 @@ func separate(rs []Reindenter) []interface{} {
 
 // process bracket, singlequote and brace
 // TODO: more elegant
-func processPunctuation(rs []Reindenter) ([]Reindenter, error) {
+func processPunctuation(rs []lexer.Reindenter) ([]lexer.Reindenter, error) {
 	var (
-		result    []Reindenter
+		result    []lexer.Reindenter
 		skipRange int
 	)
 
@@ -96,7 +96,7 @@ func processPunctuation(rs []Reindenter) ([]Reindenter, error) {
 }
 
 // returns surrounding area including punctuation such as {xxx, xxx}
-func extractSurroundingArea(rs []Reindenter) (string, int, error) {
+func extractSurroundingArea(rs []lexer.Reindenter) (string, int, error) {
 	var (
 		countOfStart int
 		countOfEnd   int

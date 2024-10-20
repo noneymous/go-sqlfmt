@@ -8,23 +8,33 @@ import (
 
 // Join clause
 type Join struct {
-	Element     []Reindenter
+	Element     []lexer.Reindenter
 	IndentLevel int
 }
 
 // Reindent reindent its elements
-func (j *Join) Reindent(buf *bytes.Buffer) error {
+func (j *Join) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
 	elements, err := processPunctuation(j.Element)
 	if err != nil {
 		return err
 	}
-	for i, v := range elements {
-		if token, ok := v.(lexer.Token); ok {
-			writeJoin(buf, token, j.IndentLevel, i == 0)
+
+	var isFirst = true
+	var lastToken lexer.Token
+	for _, el := range elements {
+		if token, ok := el.(lexer.Token); ok {
+			writeJoin(buf, token, j.IndentLevel, isFirst)
 		} else {
-			_ = v.Reindent(buf)
+			_ = el.Reindent(buf, lastToken)
+		}
+		isFirst = false
+
+		// Remember last Token element
+		if token, ok := el.(lexer.Token); ok {
+			lastToken = token
 		}
 	}
+
 	return nil
 }
 

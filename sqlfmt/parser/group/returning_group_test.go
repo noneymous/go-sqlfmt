@@ -10,28 +10,28 @@ import (
 func TestReindentReturningGroup(t *testing.T) {
 	tests := []struct {
 		name        string
-		tokenSource []Reindenter
+		tokenSource []lexer.Reindenter
 		want        string
 	}{
 		{
 			name: "normal case",
-			tokenSource: []Reindenter{
+			tokenSource: []lexer.Reindenter{
 				lexer.Token{Type: lexer.RETURNING, Value: "RETURNING"},
 				lexer.Token{Type: lexer.IDENT, Value: "something1"},
 				lexer.Token{Type: lexer.COMMA, Value: ","},
 				lexer.Token{Type: lexer.IDENT, Value: "something1"},
 			},
-			want: "\nRETURNING\n  something1\n  , something1",
+			want: "\nRETURNING\n  something1,\n  something1",
 		},
 	}
 	for _, tt := range tests {
 		buf := &bytes.Buffer{}
-		returningGroup := &Returning{Element: tt.tokenSource}
+		el := &Returning{Element: tt.tokenSource}
 
-		returningGroup.Reindent(buf)
+		_ = el.Reindent(buf, lexer.Token{})
 		got := buf.String()
 		if tt.want != got {
-			t.Errorf("want%#v, got %#v", tt.want, got)
+			t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
 		}
 	}
 }

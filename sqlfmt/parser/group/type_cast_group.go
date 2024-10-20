@@ -8,21 +8,23 @@ import (
 
 // TypeCast group
 type TypeCast struct {
-	Element     []Reindenter
+	Element     []lexer.Reindenter
 	IndentLevel int
 }
 
 // Reindent reindents its elements
-func (t *TypeCast) Reindent(buf *bytes.Buffer) error {
+func (t *TypeCast) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
 	elements, err := processPunctuation(t.Element)
 	if err != nil {
 		return err
 	}
+
 	for _, el := range elements {
 		if token, ok := el.(lexer.Token); ok {
 			writeTypeCast(buf, token)
 		}
 	}
+
 	return nil
 }
 

@@ -10,12 +10,12 @@ import (
 func TestReindentJoinGroup(t *testing.T) {
 	tests := []struct {
 		name        string
-		tokenSource []Reindenter
+		tokenSource []lexer.Reindenter
 		want        string
 	}{
 		{
 			name: "normalcase",
-			tokenSource: []Reindenter{
+			tokenSource: []lexer.Reindenter{
 				lexer.Token{Type: lexer.LEFT, Value: "LEFT"},
 				lexer.Token{Type: lexer.OUTER, Value: "OUTER"},
 				lexer.Token{Type: lexer.JOIN, Value: "JOIN"},
@@ -31,12 +31,12 @@ func TestReindentJoinGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		buf := &bytes.Buffer{}
-		joinGroup := &Join{Element: tt.tokenSource}
+		el := &Join{Element: tt.tokenSource}
 
-		joinGroup.Reindent(buf)
+		_ = el.Reindent(buf, lexer.Token{})
 		got := buf.String()
 		if tt.want != got {
-			t.Errorf("want%#v, got %#v", tt.want, got)
+			t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
 		}
 	}
 }

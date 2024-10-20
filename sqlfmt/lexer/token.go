@@ -50,6 +50,7 @@ const (
 	OR
 	ORGROUP
 	IN
+	ANY
 	IS
 	NOT
 	NULL
@@ -102,6 +103,12 @@ const (
 	DOUBLECOLON
 )
 
+// Reindenter interface. Example values of Reindenter would be clause group or token
+type Reindenter interface {
+	Reindent(buf *bytes.Buffer, prev Token) error
+	IncrementIndentLevel(lev int)
+}
+
 // Token is a token struct
 type Token struct {
 	Type  TokenType
@@ -109,7 +116,7 @@ type Token struct {
 }
 
 // Reindent is a placeholder for implementing Reindenter interface
-func (t Token) Reindent(buf *bytes.Buffer) error {
+func (t Token) Reindent(buf *bytes.Buffer, prev Token) error {
 	return nil
 }
 

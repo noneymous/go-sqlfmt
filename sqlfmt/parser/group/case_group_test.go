@@ -10,12 +10,12 @@ import (
 func TestReindentCaseGroup(t *testing.T) {
 	tests := []struct {
 		name        string
-		tokenSource []Reindenter
+		tokenSource []lexer.Reindenter
 		want        string
 	}{
 		{
 			name: "normal case",
-			tokenSource: []Reindenter{
+			tokenSource: []lexer.Reindenter{
 				lexer.Token{Type: lexer.CASE, Value: "CASE"},
 				lexer.Token{Type: lexer.WHEN, Value: "WHEN"},
 				lexer.Token{Type: lexer.IDENT, Value: "something"},
@@ -27,12 +27,12 @@ func TestReindentCaseGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		buf := &bytes.Buffer{}
-		caseGroup := &Case{Element: tt.tokenSource}
+		el := &Case{Element: tt.tokenSource}
 
-		caseGroup.Reindent(buf)
+		_ = el.Reindent(buf, lexer.Token{})
 		got := buf.String()
 		if tt.want != got {
-			t.Errorf("want%#v, got %#v", tt.want, got)
+			t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
 		}
 	}
 }

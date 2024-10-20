@@ -8,33 +8,33 @@ import (
 
 // Function clause
 type Function struct {
-	Element      []Reindenter
+	Element      []lexer.Reindenter
 	IndentLevel  int
 	InColumnArea bool
 	ColumnCount  int
 }
 
 // Reindent reindents its elements
-func (f *Function) Reindent(buf *bytes.Buffer) error {
+func (f *Function) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
 	elements, err := processPunctuation(f.Element)
 	if err != nil {
 		return err
 	}
 
-	for i, el := range elements {
+	var lastToken lexer.Token
+	for _, el := range elements {
 		if token, ok := el.(lexer.Token); ok {
-			var prev lexer.Token
-
-			if i > 0 {
-				if preToken, ok := elements[i-1].(lexer.Token); ok {
-					prev = preToken
-				}
-			}
-			writeFunction(buf, token, prev, f.IndentLevel, f.ColumnCount, f.InColumnArea)
+			writeFunction(buf, token, lastToken, f.IndentLevel, f.ColumnCount, f.InColumnArea)
 		} else {
-			_ = el.Reindent(buf)
+			_ = el.Reindent(buf, lastToken)
+		}
+
+		// Remember last Token element
+		if token, ok := el.(lexer.Token); ok {
+			lastToken = token
 		}
 	}
+
 	return nil
 }
 

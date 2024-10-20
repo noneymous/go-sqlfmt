@@ -10,12 +10,12 @@ import (
 func TestReindentWhereGroup(t *testing.T) {
 	tests := []struct {
 		name        string
-		tokenSource []Reindenter
+		tokenSource []lexer.Reindenter
 		want        string
 	}{
 		{
 			name: "normal case",
-			tokenSource: []Reindenter{
+			tokenSource: []lexer.Reindenter{
 				lexer.Token{Type: lexer.WHERE, Value: "WHERE"},
 				lexer.Token{Type: lexer.IDENT, Value: "something1"},
 				lexer.Token{Type: lexer.IDENT, Value: "="},
@@ -26,12 +26,12 @@ func TestReindentWhereGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		buf := &bytes.Buffer{}
-		whereGroup := &Where{Element: tt.tokenSource}
+		el := &Where{Element: tt.tokenSource}
 
-		whereGroup.Reindent(buf)
+		_ = el.Reindent(buf, lexer.Token{})
 		got := buf.String()
 		if tt.want != got {
-			t.Errorf("want%#v, got %#v", tt.want, got)
+			t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
 		}
 	}
 }

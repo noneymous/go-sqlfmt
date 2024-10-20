@@ -8,17 +8,23 @@ import (
 
 // Lock clause
 type Lock struct {
-	Element     []Reindenter
+	Element     []lexer.Reindenter
 	IndentLevel int
 }
 
 // Reindent reindent its elements
-func (l *Lock) Reindent(buf *bytes.Buffer) error {
-	for _, v := range l.Element {
-		if token, ok := v.(lexer.Token); ok {
+func (l *Lock) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
+	var lastToken lexer.Token
+	for _, el := range l.Element {
+		if token, ok := el.(lexer.Token); ok {
 			writeLock(buf, token)
 		} else {
-			_ = v.Reindent(buf)
+			_ = el.Reindent(buf, lastToken)
+		}
+
+		// Remember last Token element
+		if token, ok := el.(lexer.Token); ok {
+			lastToken = token
 		}
 	}
 	return nil

@@ -3,12 +3,11 @@ package parser
 import (
 	"fmt"
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
-	"github.com/noneymous/go-sqlfmt/sqlfmt/parser/group"
 )
 
 // ParseTokens parses a sequence of tokens returning a slice of Reindenter.
 // Each Reindenter is an SQL segment (group of SQL clauses) such as SelectGroup, FromGroup, etc..
-func ParseTokens(tokens []lexer.Token) ([]group.Reindenter, error) {
+func ParseTokens(tokens []lexer.Token) ([]lexer.Reindenter, error) {
 
 	// Check if tokenized string is actually an SQL query
 	if !isSql(tokens[0].Type) {

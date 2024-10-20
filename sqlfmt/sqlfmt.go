@@ -46,14 +46,14 @@ func Format(sql string, options *Options) (string, error) {
 }
 
 // generateFormattedStmt turns a sequence of parsed token groups into a formatted string.
-func generateFormattedStmt(tokensParsed []group.Reindenter, leftPadding int) (string, error) {
+func generateFormattedStmt(tokensParsed []lexer.Reindenter, leftPadding int) (string, error) {
 
 	// Prepare buffer
 	var buf bytes.Buffer
 
 	// Iterate parsed tokens and reindent accordingly
 	for _, token := range tokensParsed {
-		if err := token.Reindent(&buf); err != nil {
+		if err := token.Reindent(&buf, lexer.Token{}); err != nil {
 			return "", err
 		}
 	}

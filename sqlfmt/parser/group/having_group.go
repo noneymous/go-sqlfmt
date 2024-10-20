@@ -8,23 +8,31 @@ import (
 
 // Having clause
 type Having struct {
-	Element     []Reindenter
+	Element     []lexer.Reindenter
 	IndentLevel int
 }
 
 // Reindent reindents its elements
-func (h *Having) Reindent(buf *bytes.Buffer) error {
+func (h *Having) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
 	elements, err := processPunctuation(h.Element)
 	if err != nil {
 		return err
 	}
+
+	var lastToken lexer.Token
 	for _, el := range elements {
 		if token, ok := el.(lexer.Token); ok {
 			write(buf, token, h.IndentLevel)
 		} else {
-			_ = el.Reindent(buf)
+			_ = el.Reindent(buf, lastToken)
+		}
+
+		// Remember last Token element
+		if token, ok := el.(lexer.Token); ok {
+			lastToken = token
 		}
 	}
+
 	return nil
 }
 

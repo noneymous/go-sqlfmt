@@ -16,7 +16,7 @@ type Retriever struct {
 	tokens   []lexer.Token
 	endTypes []lexer.TokenType
 
-	result []group.Reindenter
+	result []lexer.Reindenter
 }
 
 // NewRetriever initializes a Retriever with a given sequence of lexer tokens representing an SQL query.
@@ -81,7 +81,7 @@ func NewRetriever(tokens []lexer.Token) (*Retriever, error) {
 // Process wraps processSegment() and loops until EOF is reached. There might be multiple segments in a sequence, rather than
 // nested. Without looping til EOF only the first segment would be processed.
 // Furthermore, Process drops the end index from the return values, because it's only needed in recusrive calls.
-func (r *Retriever) Process() ([]group.Reindenter, error) {
+func (r *Retriever) Process() ([]lexer.Reindenter, error) {
 
 	// Prepare process variable
 	var offset int
@@ -327,7 +327,7 @@ func (r *Retriever) isNewSegment(idx int) (bool, int) {
 
 // buildSegmentResult creates a Reindenter segment group from the intermediate Retriever subsegment, which can
 // then be appended to the result sequence
-func (r *Retriever) buildSegmentResult() group.Reindenter {
+func (r *Retriever) buildSegmentResult() lexer.Reindenter {
 
 	// Get variables to work with
 	elements := r.result

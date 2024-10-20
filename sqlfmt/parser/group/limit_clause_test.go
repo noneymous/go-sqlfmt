@@ -10,12 +10,12 @@ import (
 func TestReindentLimitGroup(t *testing.T) {
 	tests := []struct {
 		name        string
-		tokenSource []Reindenter
+		tokenSource []lexer.Reindenter
 		want        string
 	}{
 		{
 			name: "normalcase",
-			tokenSource: []Reindenter{
+			tokenSource: []lexer.Reindenter{
 				lexer.Token{Type: lexer.LIMIT, Value: "LIMIT"},
 				lexer.Token{Type: lexer.IDENT, Value: "123"},
 			},
@@ -23,14 +23,14 @@ func TestReindentLimitGroup(t *testing.T) {
 		},
 		{
 			name: "normalcase",
-			tokenSource: []Reindenter{
+			tokenSource: []lexer.Reindenter{
 				lexer.Token{Type: lexer.OFFSET, Value: "OFFSET"},
 			},
 			want: "\nOFFSET",
 		},
 		{
 			name: "normalcase",
-			tokenSource: []Reindenter{
+			tokenSource: []lexer.Reindenter{
 				lexer.Token{Type: lexer.FETCH, Value: "FETCH"},
 				lexer.Token{Type: lexer.FIRST, Value: "FIRST"},
 			},
@@ -39,12 +39,12 @@ func TestReindentLimitGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		buf := &bytes.Buffer{}
-		limitGroup := &LimitClause{Element: tt.tokenSource}
+		el := &LimitClause{Element: tt.tokenSource}
 
-		limitGroup.Reindent(buf)
+		_ = el.Reindent(buf, lexer.Token{})
 		got := buf.String()
 		if tt.want != got {
-			t.Errorf("want%#v, got %#v", tt.want, got)
+			t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
 		}
 	}
 }

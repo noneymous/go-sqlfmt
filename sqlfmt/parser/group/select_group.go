@@ -10,12 +10,12 @@ import (
 
 // Select clause
 type Select struct {
-	Element     []Reindenter
+	Element     []lexer.Reindenter
 	IndentLevel int
 }
 
-// Reindent reindens its elements
-func (s *Select) Reindent(buf *bytes.Buffer) error {
+// Reindent reindents its elements
+func (s *Select) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
 	columnCount = 0
 
 	src, err := processPunctuation(s.Element)
@@ -24,48 +24,51 @@ func (s *Select) Reindent(buf *bytes.Buffer) error {
 	}
 	elements := separate(src)
 
-	for i, element := range elements {
-		switch v := element.(type) {
+	var lastToken lexer.Token
+	for _, el := range elements {
+		switch v := el.(type) {
 		case lexer.Token, string:
-			if errWrite := writeSelect(buf, element, s.IndentLevel); errWrite != nil {
+			if errWrite := writeSelect(buf, el, s.IndentLevel); errWrite != nil {
 				return errors.Wrap(errWrite, "writeSelect failed")
 			}
 		case *Case:
-			if tok, ok := elements[i-1].(lexer.Token); ok {
-				if tok.Type == lexer.COMMA {
-					v.hasCommaBefore = true
-				}
+			if lastToken.Type == lexer.COMMA {
+				v.hasCommaBefore = true
 			}
-			_ = v.Reindent(buf)
+			_ = v.Reindent(buf, lastToken)
 			// Case group in Select clause must be in column area
 			columnCount++
 		case *Parenthesis:
 			v.InColumnArea = true
 			v.ColumnCount = columnCount
-			_ = v.Reindent(buf)
+			_ = v.Reindent(buf, lastToken)
 			columnCount++
 		case *Subquery:
-			if token, ok := elements[i-1].(lexer.Token); ok {
-				if token.Type == lexer.EXISTS {
-					_ = v.Reindent(buf)
-					continue
-				}
+			if lastToken.Type == lexer.EXISTS {
+				_ = v.Reindent(buf, lastToken)
+				continue
 			}
 			v.InColumnArea = true
 			v.ColumnCount = columnCount
-			_ = v.Reindent(buf)
+			_ = v.Reindent(buf, lastToken)
 		case *Function:
 			v.InColumnArea = true
 			v.ColumnCount = columnCount
-			_ = v.Reindent(buf)
+			_ = v.Reindent(buf, lastToken)
 			columnCount++
-		case Reindenter:
-			_ = v.Reindent(buf)
+		case lexer.Reindenter:
+			_ = v.Reindent(buf, lastToken)
 			columnCount++
 		default:
 			return fmt.Errorf("can not reindent %#v", v)
 		}
+
+		// Remember last Token element
+		if token, ok := el.(lexer.Token); ok {
+			lastToken = token
+		}
 	}
+
 	return nil
 }
 

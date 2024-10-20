@@ -8,13 +8,6 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-// Reindenter interface
-// specific values of Reindenter would be clause group or token
-type Reindenter interface {
-	Reindent(buf *bytes.Buffer) error
-	IncrementIndentLevel(lev int)
-}
-
 // count of ident appearing in column area
 var columnCount int
 

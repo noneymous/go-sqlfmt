@@ -10,12 +10,12 @@ import (
 func TestReindentOrGroup(t *testing.T) {
 	tests := []struct {
 		name        string
-		tokenSource []Reindenter
+		tokenSource []lexer.Reindenter
 		want        string
 	}{
 		{
 			name: "normalcase",
-			tokenSource: []Reindenter{
+			tokenSource: []lexer.Reindenter{
 				lexer.Token{Type: lexer.ORGROUP, Value: "OR"},
 				lexer.Token{Type: lexer.IDENT, Value: "something1"},
 				lexer.Token{Type: lexer.IDENT, Value: "something2"},
@@ -25,12 +25,12 @@ func TestReindentOrGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		buf := &bytes.Buffer{}
-		orGroup := &OrGroup{Element: tt.tokenSource}
+		el := &OrGroup{Element: tt.tokenSource}
 
-		orGroup.Reindent(buf)
+		_ = el.Reindent(buf, lexer.Token{})
 		got := buf.String()
 		if tt.want != got {
-			t.Errorf("want%#v, got %#v", tt.want, got)
+			t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
 		}
 	}
 }

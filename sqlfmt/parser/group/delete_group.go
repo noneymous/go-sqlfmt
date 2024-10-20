@@ -8,23 +8,31 @@ import (
 
 // Delete clause
 type Delete struct {
-	Element     []Reindenter
+	Element     []lexer.Reindenter
 	IndentLevel int
 }
 
 // Reindent reindents its elements
-func (d *Delete) Reindent(buf *bytes.Buffer) error {
+func (d *Delete) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
 	elements, err := processPunctuation(d.Element)
 	if err != nil {
 		return err
 	}
+
+	var lastToken lexer.Token
 	for _, el := range elements {
 		if token, ok := el.(lexer.Token); ok {
 			write(buf, token, d.IndentLevel)
 		} else {
-			_ = el.Reindent(buf)
+			_ = el.Reindent(buf, lastToken)
+		}
+
+		// Remember last Token element
+		if token, ok := el.(lexer.Token); ok {
+			lastToken = token
 		}
 	}
+
 	return nil
 }
 

@@ -10,12 +10,12 @@ import (
 func TestReindentLockGroup(t *testing.T) {
 	tests := []struct {
 		name        string
-		tokenSource []Reindenter
+		tokenSource []lexer.Reindenter
 		want        string
 	}{
 		{
 			name: "normalcase",
-			tokenSource: []Reindenter{
+			tokenSource: []lexer.Reindenter{
 				lexer.Token{Type: lexer.LOCK, Value: "LOCK"},
 				lexer.Token{Type: lexer.IDENT, Value: "table"},
 				lexer.Token{Type: lexer.IN, Value: "IN"},
@@ -26,12 +26,12 @@ func TestReindentLockGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		buf := &bytes.Buffer{}
-		lock := &Lock{Element: tt.tokenSource}
+		el := &Lock{Element: tt.tokenSource}
 
-		lock.Reindent(buf)
+		_ = el.Reindent(buf, lexer.Token{})
 		got := buf.String()
 		if tt.want != got {
-			t.Errorf("want%#v, got %#v", tt.want, got)
+			t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
 		}
 	}
 }

@@ -248,6 +248,7 @@ var keywordMap = map[string]TokenType{
 	"AND":         AND,
 	"OR":          OR,
 	"IN":          IN,
+	"ANY":         ANY,
 	"IS":          IS,
 	"NOT":         NOT,
 	"NULL":        NULL,
