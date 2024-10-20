@@ -133,6 +133,19 @@ FROM xxx
 WHERE xxx
 LIMIT xxx`,
 		},
+		{
+			src: `WITH cte_quantity AS (SELECT SUM(Quantity) as Total FROM OrderDetails GROUP BY ProductID) SELECT AVG(Total) average_product_quantity FROM cte_quantity;`,
+			want: `WITH cte_quantity AS (
+  SELECT
+    SUM(Quantity) AS Total
+  FROM OrderDetails
+  GROUP BY
+    ProductID
+)
+SELECT
+  AVG(Total) average_product_quantity
+FROM cte_quantity;`,
+		},
 	}
 
 	for _, tt := range formatTestingData {
