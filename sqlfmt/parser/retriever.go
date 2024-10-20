@@ -86,6 +86,11 @@ func (r *Retriever) Process() ([]group.Reindenter, error) {
 	// Prepare process variable
 	var offset int
 
+	// Verify that there is an EOF token at the end
+	if r.tokens[len(r.tokens)-1].Type != lexer.EOF {
+		return nil, fmt.Errorf("missing EOF token")
+	}
+
 	// Iterate and process segments until EOF is reached. Sequential segments are processed by this loop.
 	// Nested segments are recursively processed by processSegment().
 	for {
@@ -253,27 +258,48 @@ func (r *Retriever) isNewSegment(idx int) (bool, int) {
 	// Get tokens to work with
 	tokenFirst := r.tokens[0]
 	tokenCurrent := r.tokens[idx]
-	tokenNext := r.tokens[idx+1]
+	tokenPrevious := r.tokens[idx-1] // isNewSegment() is only called if idx > 0
+	tokenNext := r.tokens[idx+1]     // There will always be an EOF token at the end
 
-	// Check if token is a misleading group marker, such as
-	// 		- an ORDER BY in a function group
-	// 		- a type cast that is a function
-	// 		- an ORDER BY clause in window function
-	// 		- an opening parenthesis which belongs to a function, rather than a sub query
-	// 		- a type cast that is not a function
-	if tokenFirst.Type == lexer.FUNCTION && tokenCurrent.Type == lexer.ORDER { // in order not to make ORDER BY subGroup in Function group. This is a solution of window function
-		return false, 0
-	} else if tokenFirst.Type == lexer.TYPE && tokenCurrent.Type == lexer.STARTPARENTHESIS { // in order to ignore "(" in TypeCast group
-		return false, 0
-	} else if tokenFirst.Type == lexer.STARTPARENTHESIS && tokenCurrent.Type == lexer.ORDER { // in order to ignore ORDER BY in window function
-		return false, 0
-	} else if tokenFirst.Type == lexer.FUNCTION && (tokenCurrent.Type == lexer.STARTPARENTHESIS || tokenCurrent.Type == lexer.FROM) {
-		return false, 0
-	} else if tokenCurrent.Type == lexer.TYPE && !(tokenNext.Type == lexer.STARTPARENTHESIS) {
+	//
+	// Negative indicators:
+	//
+
+	// Not a new segment, if just the parenthesis of a function call
+	if tokenCurrent.Type == lexer.STARTPARENTHESIS && tokenPrevious.Type == lexer.FUNCTION {
 		return false, 0
 	}
 
-	// Check if token is parenthesis opening sub query, indicating subsegment and give it extra indent
+	// Not a new segment, if just the parenthesis of a type call
+	if tokenCurrent.Type == lexer.STARTPARENTHESIS && tokenPrevious.Type == lexer.TYPE {
+		return false, 0
+	}
+
+	// Not a new segment, if type call, as indicated by subsequent parenthesis
+	if tokenCurrent.Type == lexer.TYPE && tokenNext.Type != lexer.STARTPARENTHESIS {
+		return false, 0
+	}
+
+	// Not a new segment, if ORDER type contained within sub query
+	if tokenCurrent.Type == lexer.ORDER && tokenFirst.Type == lexer.STARTPARENTHESIS {
+		return false, 0
+	}
+
+	// Not a new segment, if ORDER type contained within FUNCTION subsegment
+	if tokenCurrent.Type == lexer.ORDER && tokenFirst.Type == lexer.FUNCTION {
+		return false, 0
+	}
+
+	// Not a new segment, if FROM type contained within a FUNCTION segment
+	if tokenCurrent.Type == lexer.FROM && tokenFirst.Type == lexer.FUNCTION {
+		return false, 0
+	}
+
+	//
+	// Positive indicators:
+	//
+
+	// Check if token is opening sub query, indicating subsegment and give it extra indent
 	if tokenCurrent.Type == lexer.STARTPARENTHESIS && tokenNext.Type == lexer.SELECT {
 		return true, r.indentLevel + 1
 	}
@@ -295,7 +321,7 @@ func (r *Retriever) isNewSegment(idx int) (bool, int) {
 		}
 	}
 
-	// Return false if no case for subsegment could be made
+	// Return false as a fallback if no case for subsegment could be made
 	return false, 0
 }
 

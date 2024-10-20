@@ -1,15 +1,14 @@
 # sqlfmt
 
-[![Build Status](https://travis-ci.org/kanmu/go-sqlfmt.svg?branch=master)](https://travis-ci.org/kanmu/go-sqlfmt)
 [![Go Report Card](https://goreportcard.com/badge/github.com/noneymous/go-sqlfmt)](https://goreportcard.com/report/github.com/noneymous/go-sqlfmt)
 
 ## Description
 
-The sqlfmt formats PostgreSQL statements in `.go` files into a consistent style.
-It can also be called directly to format SQL strings.
+Sqlfmt formats SQL queries or SQL statements in  `.go` files into a consistent format.
 
 This is a fork of https://github.com/kanmu/go-sqlfmt which seems to abandoned. 
-Some of its open pull requests were applied too.
+Some of its open pull requests were applied too. 
+The complete code was simplified, cleaned up and restructured.
 
 ## Example Direct Call
 
@@ -144,9 +143,10 @@ Provide flags and input files or directory
 
 ## Limitations
 
-- The `sqlfmt` is only able to format SQL statements that are surrounded with **back quotes** and values in **`QueryRow`**, **`Query`**, **`Exec`**  functions from the `"database/sql"` package.
+The `sqlfmt` is currently only able to format SQL statements in **`QueryRow`**, **`Query`**, **`Exec`**  functions from the `"database/sql"` package.
 
-  The following SQL statements will be formatted:
+
+The following SQL statements will be formatted
 
   ```go
   func sendSQL() int {
@@ -156,34 +156,38 @@ Provide flags and input files or directory
   	return id
   }
   ```
-
-  The following SQL statements will NOT be formatted:
+  
+  to
 
   ```go
-  // values in fmt.Println() are not formatting targets
   func sendSQL() int {
-      fmt.Println(`select * from xxx`)
-  }
-
-  // nor are statements surrounded with double quotes
-  func sendSQL() int {
-      var id int
-      var db *sql.DB
-      db.QueryRow("select xxx from xxx").Scan(&id)
-      return id
+  	var id int
+  	var db *sql.DB
+  	db.QueryRow(`
+SELECT
+  xxx
+FROM xxx`).Scan(&id)
+  	return id
   }
   ```
 
-## Not Supported
+
+## Not perfectly supported
 
 - `IS DISTINCT FROM`
 - `WITHIN GROUP`
 - `DISTINCT ON(xxx)`
 - `select(array)`
-- Comments after comma such as 
-`select xxxx, --comment
-        xxxx
-`
+- Comments after comma such as
+  ```
+  select 
+         xxxx, --comment
+         xxxx
+  
+  SELECT
+         xxxx, /* comment */
+         xxxx
+  ```
 - Nested square brackets or braces such as `[[xx], xx]`
   - Currently, being formatted into this: `[[ xx], xx]`
   - Ideally, it should be formatted into this: `[[xx], xx]`
@@ -192,13 +196,7 @@ Provide flags and input files or directory
   - Currently, being formatted into this: `SUM( AVERAGE(xxx))`
   - Ideally, it should be formatted into this: `SUM(AVERAGE(xxx))`
   
- 
-
-## Future Work
-
-- [ ] Refactor
-- [ ] Turn it into a plug-in or an extension for editors
-
+  
 ## Contribution
 
 Thank you for thinking of contributing to the sqlfmt!

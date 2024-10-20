@@ -50,7 +50,7 @@ func writeWithComma(buf *bytes.Buffer, v interface{}, indent int) error {
 		case token.Type == lexer.BY:
 			buf.WriteString(fmt.Sprintf("%s%s", WhiteSpace, token.Value))
 		case token.Type == lexer.COMMA:
-			buf.WriteString(fmt.Sprintf("%s%s%s%s", NewLine, strings.Repeat(DoubleWhiteSpace, indent), DoubleWhiteSpace, token.Value))
+			buf.WriteString(fmt.Sprintf("%s%s%s%s", token.Value, NewLine, strings.Repeat(DoubleWhiteSpace, indent), DoubleWhiteSpace))
 		default:
 			return fmt.Errorf("can not reindent %#v", token.Value)
 		}
@@ -61,7 +61,7 @@ func writeWithComma(buf *bytes.Buffer, v interface{}, indent int) error {
 		} else if strings.HasPrefix(token.Value, "::") {
 			buf.WriteString(fmt.Sprintf("%s", str))
 		} else {
-			buf.WriteString(fmt.Sprintf("%s%s", WhiteSpace, str))
+			buf.WriteString(fmt.Sprintf("%s", str))
 		}
 		columnCount++
 	}

@@ -162,3 +162,83 @@ FROM cte_quantity;`,
 		})
 	}
 }
+
+// TODO The following samples don't return a perfect result yet
+func TestFormat_Unsupported(t *testing.T) {
+	var formatTestingData = []struct {
+		src  string
+		want string
+	}{
+		{
+			src: `SELECT foo, bar FROM table WHERE foo IS NOT DISTINCT FROM bar;`,
+			want: `SELECT
+  foo,
+  bar
+FROM table
+WHERE foo IS NOT DISTINCT
+FROM bar;`,
+		},
+		{
+			src: `SELECT PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY temperature) FROM city_data;`,
+			want: `SELECT
+  PERCENTILE_DISC(0.5) WITHIN
+GROUP (ORDER BY temperature)
+FROM city_data;`,
+		},
+		{
+			src: `SELECT DISTINCT ON (Spalte1, Spalte2) Spalte1, Spalte2 FROM Tabellenname ORDER BY Spalte1, Spalte2;`,
+			want: `SELECT DISTINCT ON
+  (Spalte1, Spalte2) Spalte1,
+  Spalte2
+FROM Tabellenname
+ORDER BY
+  Spalte1,
+  Spalte2;`,
+		},
+		{
+			src: `SELECT sum(customfn(xxx)) FROM table`,
+			want: `SELECT
+  SUM(customfn (xxx))
+FROM table`,
+		},
+		{
+			src: `SELECT sum(avg(xxx)) FROM table`,
+			want: `SELECT
+  SUM( AVG(xxx))
+FROM table`,
+		},
+		{
+			src: `SELECT [[xx], xx] FROM table`,
+			want: `SELECT
+  [[ xx], xx]
+FROM table`,
+		},
+		{
+			src: `select xxxx, --comment
+        xxxx`,
+			want: `SELECT
+  xxxx,
+  --comment xxxx`,
+		},
+		{
+			src: `select xxxx, /* comment */ xxxx`,
+			want: `SELECT
+  xxxx,
+  /* comment */ xxxx`,
+		},
+	}
+
+	for _, tt := range formatTestingData {
+		opt := &Options{}
+		t.Run(tt.src, func(t *testing.T) {
+			got, err := Format(tt.src, opt)
+			if err != nil {
+				t.Errorf("should be nil, got %v", err)
+			} else {
+				if tt.want != got {
+					t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
+				}
+			}
+		})
+	}
+}
