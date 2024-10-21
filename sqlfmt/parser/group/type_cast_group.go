@@ -13,7 +13,7 @@ type TypeCast struct {
 }
 
 // Reindent reindents its elements
-func (t *TypeCast) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
+func (t *TypeCast) Reindent(buf *bytes.Buffer, lastParentToken lexer.Token) error {
 	elements, err := processPunctuation(t.Element)
 	if err != nil {
 		return err

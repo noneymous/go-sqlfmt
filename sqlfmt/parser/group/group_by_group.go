@@ -13,7 +13,7 @@ type GroupBy struct {
 }
 
 // Reindent reindents its elements
-func (g *GroupBy) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
+func (g *GroupBy) Reindent(buf *bytes.Buffer, lastParentToken lexer.Token) error {
 	columnCount = 0
 
 	elements, err := processPunctuation(g.Element)
@@ -21,7 +21,7 @@ func (g *GroupBy) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
 		return err
 	}
 
-	var lastToken lexer.Token
+	var previousToken lexer.Token
 	for _, el := range separate(elements) {
 		switch v := el.(type) {
 		case lexer.Token, string:
@@ -29,12 +29,12 @@ func (g *GroupBy) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
 				return err
 			}
 		case lexer.Reindenter:
-			_ = v.Reindent(buf, lastToken)
+			_ = v.Reindent(buf, previousToken)
 		}
 
 		// Remember last Token element
 		if token, ok := el.(lexer.Token); ok {
-			lastToken = token
+			previousToken = token
 		}
 	}
 

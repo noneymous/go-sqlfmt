@@ -37,13 +37,15 @@ func TestReindentUnionGroup(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		buf := &bytes.Buffer{}
-		el := &TieClause{Element: tt.tokenSource}
+		t.Run(tt.name, func(t *testing.T) {
+			buf := &bytes.Buffer{}
+			el := &TieClause{Element: tt.tokenSource}
 
-		_ = el.Reindent(buf, lexer.Token{})
-		got := buf.String()
-		if tt.want != got {
-			t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
-		}
+			_ = el.Reindent(buf, lexer.Token{})
+			got := buf.String()
+			if tt.want != got {
+				t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
+			}
+		})
 	}
 }

@@ -13,18 +13,18 @@ type Lock struct {
 }
 
 // Reindent reindent its elements
-func (l *Lock) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
-	var lastToken lexer.Token
+func (l *Lock) Reindent(buf *bytes.Buffer, lastParentToken lexer.Token) error {
+	var previousToken lexer.Token
 	for _, el := range l.Element {
 		if token, ok := el.(lexer.Token); ok {
 			writeLock(buf, token)
 		} else {
-			_ = el.Reindent(buf, lastToken)
+			_ = el.Reindent(buf, previousToken)
 		}
 
 		// Remember last Token element
 		if token, ok := el.(lexer.Token); ok {
-			lastToken = token
+			previousToken = token
 		}
 	}
 	return nil

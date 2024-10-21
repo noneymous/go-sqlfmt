@@ -10,28 +10,28 @@ import (
 type Function struct {
 	Element      []lexer.Reindenter
 	IndentLevel  int
-	InColumnArea bool
+	IsColumnArea bool
 	ColumnCount  int
 }
 
 // Reindent reindents its elements
-func (f *Function) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
+func (f *Function) Reindent(buf *bytes.Buffer, lastParentToken lexer.Token) error {
 	elements, err := processPunctuation(f.Element)
 	if err != nil {
 		return err
 	}
 
-	var lastToken lexer.Token
+	var previousToken lexer.Token
 	for _, el := range elements {
 		if token, ok := el.(lexer.Token); ok {
-			writeFunction(buf, token, lastToken, f.IndentLevel, f.ColumnCount, f.InColumnArea)
+			writeFunction(buf, token, previousToken, f.IndentLevel, f.ColumnCount, f.IsColumnArea)
 		} else {
-			_ = el.Reindent(buf, lastToken)
+			_ = el.Reindent(buf, previousToken)
 		}
 
 		// Remember last Token element
 		if token, ok := el.(lexer.Token); ok {
-			lastToken = token
+			previousToken = token
 		}
 	}
 

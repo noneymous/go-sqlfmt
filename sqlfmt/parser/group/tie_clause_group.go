@@ -13,23 +13,23 @@ type TieClause struct {
 }
 
 // Reindent reindents its elements
-func (tie *TieClause) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
+func (tie *TieClause) Reindent(buf *bytes.Buffer, lastParentToken lexer.Token) error {
 	elements, err := processPunctuation(tie.Element)
 	if err != nil {
 		return err
 	}
 
-	var lastToken lexer.Token
+	var previousToken lexer.Token
 	for _, el := range elements {
 		if token, ok := el.(lexer.Token); ok {
 			write(buf, token, tie.IndentLevel)
 		} else {
-			_ = el.Reindent(buf, lastToken)
+			_ = el.Reindent(buf, previousToken)
 		}
 
 		// Remember last Token element
 		if token, ok := el.(lexer.Token); ok {
-			lastToken = token
+			previousToken = token
 		}
 	}
 

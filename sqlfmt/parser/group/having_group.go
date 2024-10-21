@@ -13,23 +13,23 @@ type Having struct {
 }
 
 // Reindent reindents its elements
-func (h *Having) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
+func (h *Having) Reindent(buf *bytes.Buffer, lastParentToken lexer.Token) error {
 	elements, err := processPunctuation(h.Element)
 	if err != nil {
 		return err
 	}
 
-	var lastToken lexer.Token
+	var previousToken lexer.Token
 	for _, el := range elements {
 		if token, ok := el.(lexer.Token); ok {
 			write(buf, token, h.IndentLevel)
 		} else {
-			_ = el.Reindent(buf, lastToken)
+			_ = el.Reindent(buf, previousToken)
 		}
 
 		// Remember last Token element
 		if token, ok := el.(lexer.Token); ok {
-			lastToken = token
+			previousToken = token
 		}
 	}
 

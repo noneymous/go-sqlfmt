@@ -13,23 +13,23 @@ type Values struct {
 }
 
 // Reindent reindents its elements
-func (val *Values) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
+func (val *Values) Reindent(buf *bytes.Buffer, lastParentToken lexer.Token) error {
 	elements, err := processPunctuation(val.Element)
 	if err != nil {
 		return err
 	}
 
-	var lastToken lexer.Token
+	var previousToken lexer.Token
 	for _, el := range elements {
 		if token, ok := el.(lexer.Token); ok {
 			write(buf, token, val.IndentLevel)
 		} else {
-			_ = el.Reindent(buf, lastToken)
+			_ = el.Reindent(buf, previousToken)
 		}
 
 		// Remember last Token element
 		if token, ok := el.(lexer.Token); ok {
-			lastToken = token
+			previousToken = token
 		}
 	}
 

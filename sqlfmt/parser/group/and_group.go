@@ -17,23 +17,23 @@ type AndGroup struct {
 }
 
 // Reindent reindents its elements
-func (a *AndGroup) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
+func (a *AndGroup) Reindent(buf *bytes.Buffer, lastParentToken lexer.Token) error {
 	elements, err := processPunctuation(a.Element)
 	if err != nil {
 		return err
 	}
 
-	var lastToken lexer.Token
+	var previousToken lexer.Token
 	for _, el := range elements {
 		if token, ok := el.(lexer.Token); ok {
 			write(buf, token, a.IndentLevel)
 		} else {
-			_ = el.Reindent(buf, lastToken)
+			_ = el.Reindent(buf, previousToken)
 		}
 
 		// Remember last Token element
 		if token, ok := el.(lexer.Token); ok {
-			lastToken = token
+			previousToken = token
 		}
 	}
 

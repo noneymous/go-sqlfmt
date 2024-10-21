@@ -15,7 +15,7 @@ type Select struct {
 }
 
 // Reindent reindents its elements
-func (s *Select) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
+func (s *Select) Reindent(buf *bytes.Buffer, lastParentToken lexer.Token) error {
 	columnCount = 0
 
 	src, err := processPunctuation(s.Element)
@@ -24,7 +24,7 @@ func (s *Select) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
 	}
 	elements := separate(src)
 
-	var lastToken lexer.Token
+	var previousToken lexer.Token
 	for _, el := range elements {
 		switch v := el.(type) {
 		case lexer.Token, string:
@@ -32,32 +32,32 @@ func (s *Select) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
 				return errors.Wrap(errWrite, "writeSelect failed")
 			}
 		case *Case:
-			if lastToken.Type == lexer.COMMA {
+			if previousToken.Type == lexer.COMMA {
 				v.hasCommaBefore = true
 			}
-			_ = v.Reindent(buf, lastToken)
+			_ = v.Reindent(buf, previousToken)
 			// Case group in Select clause must be in column area
 			columnCount++
 		case *Parenthesis:
-			v.InColumnArea = true
+			v.IsColumnArea = true
 			v.ColumnCount = columnCount
-			_ = v.Reindent(buf, lastToken)
+			_ = v.Reindent(buf, previousToken)
 			columnCount++
 		case *Subquery:
-			if lastToken.Type == lexer.EXISTS {
-				_ = v.Reindent(buf, lastToken)
+			if previousToken.Type == lexer.EXISTS {
+				_ = v.Reindent(buf, previousToken)
 				continue
 			}
-			v.InColumnArea = true
+			v.IsColumnArea = true
 			v.ColumnCount = columnCount
-			_ = v.Reindent(buf, lastToken)
+			_ = v.Reindent(buf, previousToken)
 		case *Function:
-			v.InColumnArea = true
+			v.IsColumnArea = true
 			v.ColumnCount = columnCount
-			_ = v.Reindent(buf, lastToken)
+			_ = v.Reindent(buf, previousToken)
 			columnCount++
 		case lexer.Reindenter:
-			_ = v.Reindent(buf, lastToken)
+			_ = v.Reindent(buf, previousToken)
 			columnCount++
 		default:
 			return fmt.Errorf("can not reindent %#v", v)
@@ -65,7 +65,7 @@ func (s *Select) Reindent(buf *bytes.Buffer, prev lexer.Token) error {
 
 		// Remember last Token element
 		if token, ok := el.(lexer.Token); ok {
-			lastToken = token
+			previousToken = token
 		}
 	}
 
