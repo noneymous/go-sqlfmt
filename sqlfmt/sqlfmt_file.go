@@ -2,6 +2,7 @@ package sqlfmt
 
 import (
 	"bytes"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 	"go/ast"
 	"go/format"
 	"go/parser"
@@ -13,7 +14,7 @@ import (
 )
 
 // FormatFile formats SQL statement in .go file
-func FormatFile(filename string, src []byte, options *Options) ([]byte, error) {
+func FormatFile(filename string, src []byte, options *lexer.Options) ([]byte, error) {
 
 	// Prepare file set
 	fileSet := token.NewFileSet()

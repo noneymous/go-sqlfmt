@@ -4,6 +4,46 @@ import (
 	"bytes"
 )
 
+// Options for go-sqlfmt
+type Options struct {
+	Padding    string // Character sequence added as left padding on all lines, e.g. "" (none)
+	Indent     string // Character sequence used left indentation on indented clauses, e.g. "    " (4 spaces)
+	Newline    string // Character sequence used as line feeds, e.g. "\n" (newline character)
+	Whitespace string // Character sequence used as whitespace in SQL string, e.g. " " (single space)
+}
+
+func DefaultOptions() *Options {
+	return &Options{
+		Padding:    "",
+		Indent:     "  ",
+		Newline:    "\n",
+		Whitespace: " ",
+	}
+}
+
+// Reindenter interface. Example values of Reindenter would be clause group or token
+type Reindenter interface {
+	Reindent(buf *bytes.Buffer, parent []Reindenter, parentIdx int) error
+	IncrementIndentLevel(lev int)
+}
+
+// Token is a token struct
+type Token struct {
+	Options *Options // Options used later to format element
+	Type    TokenType
+	Value   string
+}
+
+// Reindent is a placeholder for implementing Reindenter interface
+func (t Token) Reindent(buf *bytes.Buffer, parent []Reindenter, parentIdx int) error {
+	return nil
+}
+
+// IncrementIndentLevel is a placeholder implementing Reindenter interface
+func (t Token) IncrementIndentLevel(lev int) {
+
+}
+
 // TokenType is an alias type that represents a kind of token
 //
 //go:generate stringer -type=TokenType
@@ -97,33 +137,14 @@ const (
 	LOCK
 	WITH
 
+	/*
+	*	Custom types used by sqlfmt for intermediate representations
+	 */
 	QUOTEAREA
 	SURROUNDING
 	COLON
 	DOUBLECOLON
 )
-
-// Reindenter interface. Example values of Reindenter would be clause group or token
-type Reindenter interface {
-	Reindent(buf *bytes.Buffer, prev Token) error
-	IncrementIndentLevel(lev int)
-}
-
-// Token is a token struct
-type Token struct {
-	Type  TokenType
-	Value string
-}
-
-// Reindent is a placeholder for implementing Reindenter interface
-func (t Token) Reindent(buf *bytes.Buffer, prev Token) error {
-	return nil
-}
-
-// IncrementIndentLevel is a placeholder implementing Reindenter interface
-func (t Token) IncrementIndentLevel(lev int) {
-
-}
 
 // End keywords of each clause
 var (
@@ -191,8 +212,8 @@ func (t Token) IsLimitClauseStart() bool {
 	return false
 }
 
-// IsNeedNewLineBefore returns true if token needs new line before written in buffer
-func (t Token) IsNeedNewLineBefore() bool {
+// IsNewlineKeyword returns true if token needs new line before written in buffer
+func (t Token) IsNewlineKeyword() bool {
 	var ttypes = []TokenType{SELECT, UPDATE, INSERT, DELETE, ANDGROUP, FROM, GROUP, ORGROUP, ORDER, HAVING, LIMIT, OFFSET, FETCH, RETURNING, SET, UNION, INTERSECT, EXCEPT, VALUES, WHERE, ON, USING, UNION, EXCEPT, INTERSECT}
 	for _, v := range ttypes {
 		if t.Type == v {
@@ -202,7 +223,21 @@ func (t Token) IsNeedNewLineBefore() bool {
 	return false
 }
 
-// IsKeyWordInSelect returns true if token is a keyword in select group
-func (t Token) IsKeyWordInSelect() bool {
-	return t.Type == SELECT || t.Type == EXISTS || t.Type == DISTINCT || t.Type == DISTINCTROW || t.Type == INTO || t.Type == AS || t.Type == GROUP || t.Type == ORDER || t.Type == BY || t.Type == ON || t.Type == RETURNING || t.Type == SET || t.Type == UPDATE
+// IsKeywordInSelect returns true if token is a keyword in select group
+func (t Token) IsKeywordInSelect() bool {
+	return t.Type == SELECT || t.Type == EXISTS || t.Type == DISTINCT || t.Type == DISTINCTROW || t.Type == INTO || t.Type == AS || t.Type == GROUP || t.Type == ORDER || t.Type == BY || t.Type == ON || t.Type == RETURNING || t.Type == SET || t.Type == UPDATE || t.Type == ANY
+}
+
+// IsKeywordWithoutLinebreak returns true if token doesn't require newline for subsequent sub query
+func (t Token) IsKeywordWithoutLinebreak() bool {
+	return t.Type == FROM || t.Type == WHERE || t.Type == EXISTS || t.Type == IN || t.Type == ANY || t.Type == AS
+}
+
+func (t Token) IsIdentWithoutLinebreak() bool {
+	return t.Type == IDENT && (t.Value == "=" ||
+		t.Value == ">" ||
+		t.Value == "<" ||
+		t.Value == ">=" ||
+		t.Value == "<=" ||
+		t.Value == "<>")
 }

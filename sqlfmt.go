@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/noneymous/go-sqlfmt/sqlfmt"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 	"io"
 	"log"
 	"os"
@@ -19,11 +20,19 @@ var (
 	list    = flag.Bool("l", false, "list files whose formatting differs from goreturns's")
 	write   = flag.Bool("w", false, "write result to (source) file instead of stdout")
 	doDiff  = flag.Bool("d", false, "display diffs instead of rewriting files")
-	options = &sqlfmt.Options{}
+	options = &lexer.Options{
+		Padding:    "",
+		Indent:     "  ",
+		Newline:    "\n",
+		Whitespace: " ",
+	}
 )
 
 func init() {
-	flag.IntVar(&options.Distance, "distance", 0, "write the distance from the edge to the begin of SQL statements")
+	flag.StringVar(&options.Padding, "padding", "", "define a string to use for left-padding the output.")
+	flag.StringVar(&options.Indent, "indent", "", "define a string to use for indentation.")
+	flag.StringVar(&options.Newline, "newline", "", "define a string to use for line breaks.")
+	flag.StringVar(&options.Whitespace, "whitespace", "", "define a string to use as a whitespace between values.")
 }
 
 func main() {

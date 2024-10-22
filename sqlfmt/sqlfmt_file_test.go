@@ -1,12 +1,14 @@
 package sqlfmt
 
 import (
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 	"io"
 	"os"
 	"testing"
 )
 
 func TestFormatFile(t *testing.T) {
+	options := lexer.DefaultOptions()
 	tests := []struct {
 		name     string
 		filename string
@@ -25,12 +27,11 @@ import (
 func sendSQL() int {
 	var id int
 	var db *sql.DB
-	db.QueryRow(` + "`" + `SELECT
-  ANY (
-    SELECT
-      xxx
-    FROM xxx
-  )
+	db.QueryRow(` + "`" + `SELECT ANY (
+  SELECT
+    xxx
+  FROM xxx
+)
 FROM xxx
 WHERE xxx
 LIMIT xxx` + "`" + `).Scan(&id)
@@ -57,7 +58,6 @@ func parseQuery() int {
 		},
 	}
 	for _, tt := range tests {
-		opt := &Options{}
 		t.Run(tt.name, func(t *testing.T) {
 			f, errOpen := os.Open(tt.filename)
 			if errOpen != nil {
@@ -69,7 +69,7 @@ func parseQuery() int {
 				t.Errorf("FormatFile() error = %v", errRead)
 				return
 			}
-			got, err := FormatFile(tt.filename, src, opt)
+			got, err := FormatFile(tt.filename, src, options)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FormatFile() error = %v, wantErr %v", err, tt.wantErr)
 				return

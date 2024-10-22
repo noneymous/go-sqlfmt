@@ -3,11 +3,12 @@ package parser
 import (
 	"fmt"
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/retriever"
 )
 
 // ParseTokens parses a sequence of tokens returning a slice of Reindenter.
 // Each Reindenter is an SQL segment (group of SQL clauses) such as SelectGroup, FromGroup, etc..
-func ParseTokens(tokens []lexer.Token) ([]lexer.Reindenter, error) {
+func ParseTokens(tokens []lexer.Token, options *lexer.Options) ([]lexer.Reindenter, error) {
 
 	// Check if tokenized string is actually an SQL query
 	if !isSql(tokens[0].Type) {
@@ -15,13 +16,13 @@ func ParseTokens(tokens []lexer.Token) ([]lexer.Reindenter, error) {
 	}
 
 	// Prepare retriever for segment
-	retriever, errRetriever := NewRetriever(tokens)
+	retrvr, errRetriever := retriever.NewRetriever(tokens, options)
 	if errRetriever != nil {
 		return nil, errRetriever
 	}
 
 	// Process tokens
-	result, errProcess := retriever.Process()
+	result, errProcess := retrvr.Process()
 	if errProcess != nil {
 		return nil, errProcess
 	}

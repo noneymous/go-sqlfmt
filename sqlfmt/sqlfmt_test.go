@@ -2,31 +2,9 @@ package sqlfmt
 
 import (
 	"fmt"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 	"testing"
 )
-
-func TestCompare(t *testing.T) {
-	test := struct {
-		before string
-		after  string
-		want   bool
-	}{
-		before: "select * from xxx",
-		after:  "select\n  *\nFROM xxx",
-		want:   true,
-	}
-	if got := compare(test.before, test.after); got != test.want {
-		t.Errorf("want %v#v got %#v", test.want, got)
-	}
-}
-
-func TestRemove(t *testing.T) {
-	got := removeSymbol("select xxx from xxx")
-	want := "selectxxxfromxxx"
-	if got != want {
-		t.Errorf("want %#v, got %#v", want, got)
-	}
-}
 
 func TestFormat(t *testing.T) {
 	var formatTestingData = []struct {
@@ -44,7 +22,7 @@ WHERE t < DATE_TRUNC('DAY', TO_TIMESTAMP('2022-01-01'))`,
 		},
 		{
 			name: "simple query mixed elements",
-			sql:  `SELECT db.oid as did, db.datname as name, ta.spcname as spcname, db.datallowconn, db.datistemplate AS is_template, pg_catalog.has_database_privilege(db.oid, 'CREATE') as cancreate, datdba as owner FROM pg_catalog.pg_database db LEFT OUTER JOIN pg_catalog.pg_tablespace ta ON db.dattablespace = ta.oid WHERE db.oid > 16383::OID OR db.datname IN ('postgres', 'edb')  ORDER BY datname`,
+			sql:  `SELECT db.oid as did, db.datname as name, ta.spcname as spcname, db.datallowconn, db.datistemplate AS is_template, pg_catalog.has_database_privilege(db.oid, 'CREATE') as cancreate, datdba as owner, DATE_TRUNC('DAY', TO_TIMESTAMP('2022-01-01')) FROM pg_catalog.pg_database db LEFT OUTER JOIN pg_catalog.pg_tablespace ta ON db.dattablespace = ta.oid WHERE db.oid > 16383::OID OR db.datname IN ('postgres', 'edb')  ORDER BY datname`,
 			want: `SELECT
   db.oid AS did,
   db.datname AS name,
@@ -52,7 +30,8 @@ WHERE t < DATE_TRUNC('DAY', TO_TIMESTAMP('2022-01-01'))`,
   db.datallowconn,
   db.datistemplate AS is_template,
   pg_catalog.HAS_DATABASE_PRIVILEGE(db.oid, 'CREATE') AS cancreate,
-  datdba AS owner
+  datdba AS owner,
+  DATE_TRUNC('DAY', TO_TIMESTAMP('2022-01-01'))
 FROM pg_catalog.pg_database db
 LEFT OUTER JOIN pg_catalog.pg_tablespace ta ON db.dattablespace = ta.oid
 WHERE db.oid > 16383:: OID OR db.datname IN ('postgres', 'edb')
@@ -93,8 +72,8 @@ FROM xxx
 UNION`, // Invalid query but still formatted well
 		},
 		{
-			name: "where exists",
-			sql:  `SELECT has_table_privilege( 'pgagent.pga_job', 'INSERT, SELECT, UPDATE' ) has_priviledge WHERE EXISTS( SELECT has_schema_privilege('pgagent', 'USAGE') WHERE EXISTS( SELECT cl.oid FROM pg_catalog.pg_class cl LEFT JOIN pg_catalog.pg_namespace ns ON ns.oid=relnamespace WHERE relname='pga_job' AND nspname='pgagent' ) )`,
+			name: "where exists 1",
+			sql:  `SELECT has_table_privilege( 'pgagent.pga_job', 'INSERT, SELECT, UPDATE' ) has_priviledge WHERE EXISTS( SELECT has_schema_privilege('pgagent', 'USAGE') WHERE EXISTS( SELECT cl.oid FROM pg_catalog.pg_class cl LEFT JOIN pg_catalog.pg_namespace ns ON ns.oid = relnamespace WHERE relname = 'pga_job' AND nspname ='pgagent' ) )`,
 			want: `SELECT
   HAS_TABLE_PRIVILEGE('pgagent.pga_job', 'INSERT, SELECT, UPDATE') has_priviledge
 WHERE EXISTS (
@@ -104,8 +83,49 @@ WHERE EXISTS (
     SELECT
       cl.oid
     FROM pg_catalog.pg_class cl
-    LEFT JOIN pg_catalog.pg_namespace ns ON ns.oid=relnamespace
-    WHERE relname= 'pga_job' AND nspname= 'pgagent'
+    LEFT JOIN pg_catalog.pg_namespace ns ON ns.oid = relnamespace
+    WHERE relname = 'pga_job' AND nspname = 'pgagent'
+  )
+)`,
+		},
+		{
+			name: "where exists 2",
+			sql: `SELECT
+  HAS_TABLE_PRIVILEGE('pgagent.pga_job', 'INSERT, SELECT, UPDATE') has_priviledge
+WHERE EXISTS (
+  SELECT
+    HAS_SCHEMA_PRIVILEGE('pgagent', 'USAGE')
+  WHERE EXISTS (
+    SELECT
+      cl.oid
+    FROM pg_catalog.pg_class cl
+    LEFT JOIN pg_catalog.pg_namespace ns ON ns.oid = relnamespace
+    WHERE EXISTS (
+      SELECT
+        cl.oid
+      FROM pg_catalog.pg_class cl
+      LEFT JOIN pg_catalog.pg_namespace ns ON ns.oid = relnamespace
+      WHERE relname = 'pga_job' AND nspname = 'pgagent'
+    )
+  )
+)`,
+			want: `SELECT
+  HAS_TABLE_PRIVILEGE('pgagent.pga_job', 'INSERT, SELECT, UPDATE') has_priviledge
+WHERE EXISTS (
+  SELECT
+    HAS_SCHEMA_PRIVILEGE('pgagent', 'USAGE')
+  WHERE EXISTS (
+    SELECT
+      cl.oid
+    FROM pg_catalog.pg_class cl
+    LEFT JOIN pg_catalog.pg_namespace ns ON ns.oid = relnamespace
+    WHERE EXISTS (
+      SELECT
+        cl.oid
+      FROM pg_catalog.pg_class cl
+      LEFT JOIN pg_catalog.pg_namespace ns ON ns.oid = relnamespace
+      WHERE relname = 'pga_job' AND nspname = 'pgagent'
+    )
   )
 )`,
 		},
@@ -165,12 +185,11 @@ LIMIT 1`,
 		{
 			name: "select any",
 			sql:  `select any ( select xxx from xxx ) from xxx where xxx limit xxx`,
-			want: `SELECT
-  ANY (
-    SELECT
-      xxx
-    FROM xxx
-  )
+			want: `SELECT ANY (
+  SELECT
+    xxx
+  FROM xxx
+)
 FROM xxx
 WHERE xxx
 LIMIT xxx`,
@@ -191,16 +210,16 @@ FROM cte_quantity;`,
 		},
 		{
 			name: "oid type cast",
-			sql:  `SELECT con.conkey FROM pg_catalog.pg_class rel LEFT OUTER JOIN pg_catalog.pg_constraint con ON con.conrelid=rel.oid AND con.contype='p' WHERE rel.relkind IN ('r','s','t', 'p') AND rel.oid = 33176310::oid`,
+			sql:  `SELECT con.conkey FROM pg_catalog.pg_class rel LEFT OUTER JOIN pg_catalog.pg_constraint con ON con.conrelid = rel.oid AND con.contype = 'p' WHERE rel.relkind IN ('r','s','t', 'p') AND rel.oid = 33176310::oid`,
 			want: `SELECT
   con.conkey
 FROM pg_catalog.pg_class rel
-LEFT OUTER JOIN pg_catalog.pg_constraint con ON con.conrelid=rel.oid AND con.contype= 'p'
+LEFT OUTER JOIN pg_catalog.pg_constraint con ON con.conrelid = rel.oid AND con.contype = 'p'
 WHERE rel.relkind IN ('r', 's', 't', 'p') AND rel.oid = 33176310:: oid`,
 		},
 		{
 			name: "complex query with inner select and oid type cast",
-			sql:  `SELECT at.attname, at.attnum, ty.typname FROM pg_catalog.pg_attribute at LEFT JOIN pg_catalog.pg_type ty ON (ty.oid = at.atttypid) WHERE attrelid=33176310::oid AND attnum = ANY ((SELECT con.conkey FROM pg_catalog.pg_class rel LEFT OUTER JOIN pg_catalog.pg_constraint con ON con.conrelid=rel.oid AND con.contype='p' WHERE rel.relkind IN ('r','s','t', 'p') AND rel.oid = 33176310::oid)::oid[])`,
+			sql:  `SELECT at.attname, at.attnum, ty.typname FROM pg_catalog.pg_attribute at LEFT JOIN pg_catalog.pg_type ty ON (ty.oid = at.atttypid) WHERE attrelid=33176310::oid AND attnum = ANY ((SELECT con.conkey FROM pg_catalog.pg_class rel LEFT OUTER JOIN pg_catalog.pg_constraint con ON con.conrelid = rel.oid AND con.contype = 'p' WHERE rel.relkind IN ('r','s','t', 'p') AND rel.oid = 33176310::oid)::oid[])`,
 			want: `SELECT
   at.attname,
   at.attnum,
@@ -212,10 +231,92 @@ WHERE attrelid=33176310:: oid AND attnum = ANY (
     SELECT
       con.conkey
     FROM pg_catalog.pg_class rel
-    LEFT OUTER JOIN pg_catalog.pg_constraint con ON con.conrelid=rel.oid AND con.contype= 'p'
+    LEFT OUTER JOIN pg_catalog.pg_constraint con ON con.conrelid = rel.oid AND con.contype = 'p'
     WHERE rel.relkind IN ('r', 's', 't', 'p') AND rel.oid = 33176310:: oid
   ):: oid []
 )`,
+		},
+		{
+			name: "complex multi nested query with inner select and oid type cast",
+			sql: `SELECT
+  at.attname,
+  at.attnum,
+  ty.typname
+FROM pg_catalog.pg_attribute AT
+LEFT JOIN pg_catalog.pg_type ty ON (ty.oid = at.atttypid)
+WHERE attrelid=33176310:: oid AND attnum = ANY ( ( SELECT con.conkey FROM pg_catalog.pg_class rel LEFT OUTER JOIN pg_catalog.pg_constraint con ON con.conrelid = rel.oid AND con.contype = 'p' WHERE attnum = ANY ( ( SELECT con.conkey FROM pg_catalog.pg_class rel LEFT OUTER JOIN pg_catalog.pg_constraint con ON con.conrelid = rel.oid AND con.contype = 'p' WHERE attnum = ANY ( ( SELECT con.conkey FROM pg_catalog.pg_class rel LEFT OUTER JOIN pg_catalog.pg_constraint con ON con.conrelid = rel.oid AND con.contype = 'p' WHERE rel.relkind IN ('r', 's', 't', 'p') AND rel.oid = 33176310:: oid ):: oid [] ) ):: oid [] ) ):: oid []
+)`,
+			want: `SELECT
+  at.attname,
+  at.attnum,
+  ty.typname
+FROM pg_catalog.pg_attribute AT
+LEFT JOIN pg_catalog.pg_type ty ON (ty.oid = at.atttypid)
+WHERE attrelid=33176310:: oid AND attnum = ANY (
+  (
+    SELECT
+      con.conkey
+    FROM pg_catalog.pg_class rel
+    LEFT OUTER JOIN pg_catalog.pg_constraint con ON con.conrelid = rel.oid AND con.contype = 'p'
+    WHERE attnum = ANY (
+      (
+        SELECT
+          con.conkey
+        FROM pg_catalog.pg_class rel
+        LEFT OUTER JOIN pg_catalog.pg_constraint con ON con.conrelid = rel.oid AND con.contype = 'p'
+        WHERE attnum = ANY (
+          (
+            SELECT
+              con.conkey
+            FROM pg_catalog.pg_class rel
+            LEFT OUTER JOIN pg_catalog.pg_constraint con ON con.conrelid = rel.oid AND con.contype = 'p'
+            WHERE rel.relkind IN ('r', 's', 't', 'p') AND rel.oid = 33176310:: oid
+          ):: oid []
+        )
+      ):: oid []
+    )
+  ):: oid []
+)`,
+		},
+		{
+			name: "simple but high variety",
+			sql:  `SELECT tble1.col1 AS a, ( SELECT unit FROM tble2 WHERE col4 > 14 AND col5 == 'test' ) AS b, tble1.col3 AS c FROM ( SELECT col1, col2, col3, col4 FROM contents WHERE active = true AND attr2 = true AND attr3 = true AND attr4 = true AND attr5 = true AND attr6 IN ( SELECT * FROM attributes ) AND attr6 = true AND attr7 = true ) AS tble1 WHERE col3 ILIKE '%substr%' AND col4 > ( SELECT MAX(salary) FROM employees ) LIMIT 1`,
+			want: `SELECT
+  tble1.col1 AS a,
+  (
+    SELECT
+      unit
+    FROM tble2
+    WHERE col4 > 14 AND col5 == 'test'
+  ) AS b,
+  tble1.col3 AS c
+FROM (
+  SELECT
+    col1,
+    col2,
+    col3,
+    col4
+  FROM contents
+  WHERE
+    active = true AND
+    attr2 = true AND
+    attr3 = true AND
+    attr4 = true AND
+    attr5 = true AND
+    attr6 IN (
+      SELECT
+        *
+      FROM attributes
+    ) AND
+    attr6 = true AND
+    attr7 = true
+) AS tble1
+WHERE col3 ILIKE '%substr%' AND col4 > (
+  SELECT
+    MAX(salary)
+  FROM employees
+)
+LIMIT 1`,
 		},
 
 		//
@@ -240,11 +341,21 @@ GROUP (ORDER BY temperature)
 FROM city_data;`,
 		},
 		{
-			name: "distinct on",
+			name: "distinct on 1",
 			sql:  `SELECT DISTINCT ON (Spalte1, Spalte2) Spalte1, Spalte2 FROM Tabellenname ORDER BY Spalte1, Spalte2;`,
 			want: `SELECT DISTINCT ON
   (Spalte1, Spalte2) Spalte1,
   Spalte2
+FROM Tabellenname
+ORDER BY
+  Spalte1,
+  Spalte2;`,
+		},
+		{
+			name: "distinct on 2",
+			sql:  `SELECT DISTINCT ON (Spalte1, Spalte2) Spalte1 FROM Tabellenname ORDER BY Spalte1, Spalte2;`,
+			want: `SELECT DISTINCT ON
+  (Spalte1, Spalte2) Spalte1
 FROM Tabellenname
 ORDER BY
   Spalte1,
@@ -289,9 +400,9 @@ FROM table`,
 	}
 
 	for _, tt := range formatTestingData {
-		opt := &Options{}
+		options := lexer.DefaultOptions()
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Format(tt.sql, opt)
+			got, err := Format(tt.sql, options)
 			if err != nil {
 				t.Errorf("should be nil, got %v", err)
 			} else {
@@ -302,5 +413,28 @@ FROM table`,
 				}
 			}
 		})
+	}
+}
+
+func TestCompare(t *testing.T) {
+	test := struct {
+		before string
+		after  string
+		want   bool
+	}{
+		before: "select * from xxx",
+		after:  "select\n  *\nFROM xxx",
+		want:   true,
+	}
+	if got := compare(test.before, test.after); got != test.want {
+		t.Errorf("want %v#v got %#v", test.want, got)
+	}
+}
+
+func TestRemove(t *testing.T) {
+	got := removeSymbol("select xxx from xxx")
+	want := "selectxxxfromxxx"
+	if got != want {
+		t.Errorf("want %#v, got %#v", want, got)
 	}
 }

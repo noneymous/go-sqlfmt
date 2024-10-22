@@ -5,83 +5,84 @@ import (
 	"testing"
 
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
-	"github.com/noneymous/go-sqlfmt/sqlfmt/parser/group"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/retriever/reindenters"
 )
 
 func TestParseTokens(t *testing.T) {
+	options := lexer.DefaultOptions()
 	testingData := []lexer.Token{
-		{Type: lexer.SELECT, Value: "SELECT"},
-		{Type: lexer.IDENT, Value: "name"},
-		{Type: lexer.COMMA, Value: ","},
-		{Type: lexer.IDENT, Value: "age"},
-		{Type: lexer.COMMA, Value: ","},
+		{Options: options, Type: lexer.SELECT, Value: "SELECT"},
+		{Options: options, Type: lexer.IDENT, Value: "name"},
+		{Options: options, Type: lexer.COMMA, Value: ","},
+		{Options: options, Type: lexer.IDENT, Value: "age"},
+		{Options: options, Type: lexer.COMMA, Value: ","},
 
-		{Type: lexer.FUNCTION, Value: "SUM"},
-		{Type: lexer.STARTPARENTHESIS, Value: "("},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.ENDPARENTHESIS, Value: ")"},
+		{Options: options, Type: lexer.FUNCTION, Value: "SUM"},
+		{Options: options, Type: lexer.STARTPARENTHESIS, Value: "("},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.ENDPARENTHESIS, Value: ")"},
 
-		{Type: lexer.STARTPARENTHESIS, Value: "("},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.ENDPARENTHESIS, Value: ")"},
+		{Options: options, Type: lexer.STARTPARENTHESIS, Value: "("},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.ENDPARENTHESIS, Value: ")"},
 
-		{Type: lexer.TYPE, Value: "TEXT"},
-		{Type: lexer.STARTPARENTHESIS, Value: "("},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.ENDPARENTHESIS, Value: ")"},
+		{Options: options, Type: lexer.TYPE, Value: "TEXT"},
+		{Options: options, Type: lexer.STARTPARENTHESIS, Value: "("},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.ENDPARENTHESIS, Value: ")"},
 
-		{Type: lexer.FROM, Value: "FROM"},
-		{Type: lexer.IDENT, Value: "user"},
-		{Type: lexer.WHERE, Value: "WHERE"},
-		{Type: lexer.IDENT, Value: "name"},
-		{Type: lexer.IDENT, Value: "="},
-		{Type: lexer.STRING, Value: "'xxx'"},
-		{Type: lexer.EOF, Value: "EOF"},
+		{Options: options, Type: lexer.FROM, Value: "FROM"},
+		{Options: options, Type: lexer.IDENT, Value: "user"},
+		{Options: options, Type: lexer.WHERE, Value: "WHERE"},
+		{Options: options, Type: lexer.IDENT, Value: "name"},
+		{Options: options, Type: lexer.IDENT, Value: "="},
+		{Options: options, Type: lexer.STRING, Value: "'xxx'"},
+		{Options: options, Type: lexer.EOF, Value: "EOF"},
 	}
 	testingData2 := []lexer.Token{
-		{Type: lexer.SELECT, Value: "SELECT"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.FROM, Value: "FROM"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.WHERE, Value: "WHERE"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.IN, Value: "IN"},
-		{Type: lexer.STARTPARENTHESIS, Value: "("},
-		{Type: lexer.SELECT, Value: "SELECT"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.FROM, Value: "FROM"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.JOIN, Value: "JOIN"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.ON, Value: "ON"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.IDENT, Value: "="},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.ENDPARENTHESIS, Value: ")"},
-		{Type: lexer.GROUP, Value: "GROUP"},
-		{Type: lexer.BY, Value: "BY"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.ORDER, Value: "ORDER"},
-		{Type: lexer.BY, Value: "BY"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.LIMIT, Value: "LIMIT"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.UNION, Value: "UNION"},
-		{Type: lexer.ALL, Value: "ALL"},
-		{Type: lexer.SELECT, Value: "SELECT"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.FROM, Value: "FROM"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.EOF, Value: "EOF"},
+		{Options: options, Type: lexer.SELECT, Value: "SELECT"},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.FROM, Value: "FROM"},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.WHERE, Value: "WHERE"},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.IN, Value: "IN"},
+		{Options: options, Type: lexer.STARTPARENTHESIS, Value: "("},
+		{Options: options, Type: lexer.SELECT, Value: "SELECT"},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.FROM, Value: "FROM"},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.JOIN, Value: "JOIN"},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.ON, Value: "ON"},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.IDENT, Value: "="},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.ENDPARENTHESIS, Value: ")"},
+		{Options: options, Type: lexer.GROUP, Value: "GROUP"},
+		{Options: options, Type: lexer.BY, Value: "BY"},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.ORDER, Value: "ORDER"},
+		{Options: options, Type: lexer.BY, Value: "BY"},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.LIMIT, Value: "LIMIT"},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.UNION, Value: "UNION"},
+		{Options: options, Type: lexer.ALL, Value: "ALL"},
+		{Options: options, Type: lexer.SELECT, Value: "SELECT"},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.FROM, Value: "FROM"},
+		{Options: options, Type: lexer.IDENT, Value: "xxx"},
+		{Options: options, Type: lexer.EOF, Value: "EOF"},
 	}
 	testingData3 := []lexer.Token{
-		{Type: lexer.UPDATE, Value: "UPDATE"},
-		{Type: lexer.IDENT, Value: "user"},
-		{Type: lexer.SET, Value: "SET"},
-		{Type: lexer.IDENT, Value: "point"},
-		{Type: lexer.IDENT, Value: "="},
-		{Type: lexer.IDENT, Value: "0"},
-		{Type: lexer.EOF, Value: "EOF"},
+		{Options: options, Type: lexer.UPDATE, Value: "UPDATE"},
+		{Options: options, Type: lexer.IDENT, Value: "user"},
+		{Options: options, Type: lexer.SET, Value: "SET"},
+		{Options: options, Type: lexer.IDENT, Value: "point"},
+		{Options: options, Type: lexer.IDENT, Value: "="},
+		{Options: options, Type: lexer.IDENT, Value: "0"},
+		{Options: options, Type: lexer.EOF, Value: "EOF"},
 	}
 
 	tests := []struct {
@@ -93,50 +94,56 @@ func TestParseTokens(t *testing.T) {
 			name:        "normal test case 1",
 			tokenSource: testingData,
 			want: []lexer.Reindenter{
-				&group.Select{
+				&reindenters.Select{
+					Options: options,
 					Element: []lexer.Reindenter{
-						lexer.Token{Type: lexer.SELECT, Value: "SELECT"},
-						lexer.Token{Type: lexer.IDENT, Value: "name"},
-						lexer.Token{Type: lexer.COMMA, Value: ","},
-						lexer.Token{Type: lexer.IDENT, Value: "age"},
-						lexer.Token{Type: lexer.COMMA, Value: ","},
-						&group.Function{
+						lexer.Token{Options: options, Type: lexer.SELECT, Value: "SELECT"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "name"},
+						lexer.Token{Options: options, Type: lexer.COMMA, Value: ","},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "age"},
+						lexer.Token{Options: options, Type: lexer.COMMA, Value: ","},
+						&reindenters.Function{
+							Options: options,
 							Element: []lexer.Reindenter{
-								lexer.Token{Type: lexer.FUNCTION, Value: "SUM"},
-								lexer.Token{Type: lexer.STARTPARENTHESIS, Value: "("},
-								lexer.Token{Type: lexer.IDENT, Value: "xxx"},
-								lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"},
+								lexer.Token{Options: options, Type: lexer.FUNCTION, Value: "SUM"},
+								lexer.Token{Options: options, Type: lexer.STARTPARENTHESIS, Value: "("},
+								lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
+								lexer.Token{Options: options, Type: lexer.ENDPARENTHESIS, Value: ")"},
 							},
 						},
-						&group.Parenthesis{
+						&reindenters.Parenthesis{
+							Options: options,
 							Element: []lexer.Reindenter{
-								lexer.Token{Type: lexer.STARTPARENTHESIS, Value: "("},
-								lexer.Token{Type: lexer.IDENT, Value: "xxx"},
-								lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"},
+								lexer.Token{Options: options, Type: lexer.STARTPARENTHESIS, Value: "("},
+								lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
+								lexer.Token{Options: options, Type: lexer.ENDPARENTHESIS, Value: ")"},
 							},
 						},
-						&group.TypeCast{
+						&reindenters.TypeCast{
+							Options: options,
 							Element: []lexer.Reindenter{
-								lexer.Token{Type: lexer.TYPE, Value: "TEXT"},
-								lexer.Token{Type: lexer.STARTPARENTHESIS, Value: "("},
-								lexer.Token{Type: lexer.IDENT, Value: "xxx"},
-								lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"},
+								lexer.Token{Options: options, Type: lexer.TYPE, Value: "TEXT"},
+								lexer.Token{Options: options, Type: lexer.STARTPARENTHESIS, Value: "("},
+								lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
+								lexer.Token{Options: options, Type: lexer.ENDPARENTHESIS, Value: ")"},
 							},
 						},
 					},
 				},
-				&group.From{
+				&reindenters.From{
+					Options: options,
 					Element: []lexer.Reindenter{
-						lexer.Token{Type: lexer.FROM, Value: "FROM"},
-						lexer.Token{Type: lexer.IDENT, Value: "user"},
+						lexer.Token{Options: options, Type: lexer.FROM, Value: "FROM"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "user"},
 					},
 				},
-				&group.Where{
+				&reindenters.Where{
+					Options: options,
 					Element: []lexer.Reindenter{
-						lexer.Token{Type: lexer.WHERE, Value: "WHERE"},
-						lexer.Token{Type: lexer.IDENT, Value: "name"},
-						lexer.Token{Type: lexer.IDENT, Value: "="},
-						lexer.Token{Type: lexer.STRING, Value: "'xxx'"},
+						lexer.Token{Options: options, Type: lexer.WHERE, Value: "WHERE"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "name"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "="},
+						lexer.Token{Options: options, Type: lexer.STRING, Value: "'xxx'"},
 					},
 				},
 			},
@@ -145,93 +152,106 @@ func TestParseTokens(t *testing.T) {
 			name:        "normal test case 2",
 			tokenSource: testingData2,
 			want: []lexer.Reindenter{
-				&group.Select{
+				&reindenters.Select{
+					Options: options,
 					Element: []lexer.Reindenter{
-						lexer.Token{Type: lexer.SELECT, Value: "SELECT"},
-						lexer.Token{Type: lexer.IDENT, Value: "xxx"},
+						lexer.Token{Options: options, Type: lexer.SELECT, Value: "SELECT"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
 					},
 				},
-				&group.From{
+				&reindenters.From{
+					Options: options,
 					Element: []lexer.Reindenter{
-						lexer.Token{Type: lexer.FROM, Value: "FROM"},
-						lexer.Token{Type: lexer.IDENT, Value: "xxx"},
+						lexer.Token{Options: options, Type: lexer.FROM, Value: "FROM"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
 					},
 				},
-				&group.Where{
+				&reindenters.Where{
+					Options: options,
 					Element: []lexer.Reindenter{
-						lexer.Token{Type: lexer.WHERE, Value: "WHERE"},
-						lexer.Token{Type: lexer.IDENT, Value: "xxx"},
-						lexer.Token{Type: lexer.IN, Value: "IN"},
-						&group.Subquery{
+						lexer.Token{Options: options, Type: lexer.WHERE, Value: "WHERE"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
+						lexer.Token{Options: options, Type: lexer.IN, Value: "IN"},
+						&reindenters.Subquery{
+							Options: options,
 							Element: []lexer.Reindenter{
-								lexer.Token{Type: lexer.STARTPARENTHESIS, Value: "("},
-								&group.Select{
+								lexer.Token{Options: options, Type: lexer.STARTPARENTHESIS, Value: "("},
+								&reindenters.Select{
+									Options: options,
 									Element: []lexer.Reindenter{
-										lexer.Token{Type: lexer.SELECT, Value: "SELECT"},
-										lexer.Token{Type: lexer.IDENT, Value: "xxx"},
+										lexer.Token{Options: options, Type: lexer.SELECT, Value: "SELECT"},
+										lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
 									},
 									IndentLevel: 1,
 								},
-								&group.From{
+								&reindenters.From{
+									Options: options,
 									Element: []lexer.Reindenter{
-										lexer.Token{Type: lexer.FROM, Value: "FROM"},
-										lexer.Token{Type: lexer.IDENT, Value: "xxx"},
+										lexer.Token{Options: options, Type: lexer.FROM, Value: "FROM"},
+										lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
 									},
 									IndentLevel: 1,
 								},
-								&group.Join{
+								&reindenters.Join{
+									Options: options,
 									Element: []lexer.Reindenter{
-										lexer.Token{Type: lexer.JOIN, Value: "JOIN"},
-										lexer.Token{Type: lexer.IDENT, Value: "xxx"},
-										lexer.Token{Type: lexer.ON, Value: "ON"},
-										lexer.Token{Type: lexer.IDENT, Value: "xxx"},
-										lexer.Token{Type: lexer.IDENT, Value: "="},
-										lexer.Token{Type: lexer.IDENT, Value: "xxx"},
+										lexer.Token{Options: options, Type: lexer.JOIN, Value: "JOIN"},
+										lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
+										lexer.Token{Options: options, Type: lexer.ON, Value: "ON"},
+										lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
+										lexer.Token{Options: options, Type: lexer.IDENT, Value: "="},
+										lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
 									},
 									IndentLevel: 1,
 								},
-								lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"},
+								lexer.Token{Options: options, Type: lexer.ENDPARENTHESIS, Value: ")"},
 							},
 							IndentLevel: 1,
 						},
 					},
 				},
-				&group.GroupBy{
+				&reindenters.GroupBy{
+					Options: options,
 					Element: []lexer.Reindenter{
-						lexer.Token{Type: lexer.GROUP, Value: "GROUP"},
-						lexer.Token{Type: lexer.BY, Value: "BY"},
-						lexer.Token{Type: lexer.IDENT, Value: "xxx"},
+						lexer.Token{Options: options, Type: lexer.GROUP, Value: "GROUP"},
+						lexer.Token{Options: options, Type: lexer.BY, Value: "BY"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
 					},
 				},
-				&group.OrderBy{
+				&reindenters.OrderBy{
+					Options: options,
 					Element: []lexer.Reindenter{
-						lexer.Token{Type: lexer.ORDER, Value: "ORDER"},
-						lexer.Token{Type: lexer.BY, Value: "BY"},
-						lexer.Token{Type: lexer.IDENT, Value: "xxx"},
+						lexer.Token{Options: options, Type: lexer.ORDER, Value: "ORDER"},
+						lexer.Token{Options: options, Type: lexer.BY, Value: "BY"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
 					},
 				},
-				&group.LimitClause{
+				&reindenters.Limit{
+					Options: options,
 					Element: []lexer.Reindenter{
-						lexer.Token{Type: lexer.LIMIT, Value: "LIMIT"},
-						lexer.Token{Type: lexer.IDENT, Value: "xxx"},
+						lexer.Token{Options: options, Type: lexer.LIMIT, Value: "LIMIT"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
 					},
 				},
-				&group.TieClause{
+				&reindenters.TieGroup{
+					Options: options,
 					Element: []lexer.Reindenter{
-						lexer.Token{Type: lexer.UNION, Value: "UNION"},
-						lexer.Token{Type: lexer.ALL, Value: "ALL"},
+						lexer.Token{Options: options, Type: lexer.UNION, Value: "UNION"},
+						lexer.Token{Options: options, Type: lexer.ALL, Value: "ALL"},
 					},
 				},
-				&group.Select{
+				&reindenters.Select{
+					Options: options,
 					Element: []lexer.Reindenter{
-						lexer.Token{Type: lexer.SELECT, Value: "SELECT"},
-						lexer.Token{Type: lexer.IDENT, Value: "xxx"},
+						lexer.Token{Options: options, Type: lexer.SELECT, Value: "SELECT"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
 					},
 				},
-				&group.From{
+				&reindenters.From{
+					Options: options,
 					Element: []lexer.Reindenter{
-						lexer.Token{Type: lexer.FROM, Value: "FROM"},
-						lexer.Token{Type: lexer.IDENT, Value: "xxx"},
+						lexer.Token{Options: options, Type: lexer.FROM, Value: "FROM"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "xxx"},
 					},
 				},
 			},
@@ -240,25 +260,27 @@ func TestParseTokens(t *testing.T) {
 			name:        "normal test case 3",
 			tokenSource: testingData3,
 			want: []lexer.Reindenter{
-				&group.Update{
+				&reindenters.Update{
+					Options: options,
 					Element: []lexer.Reindenter{
-						lexer.Token{Type: lexer.UPDATE, Value: "UPDATE"},
-						lexer.Token{Type: lexer.IDENT, Value: "user"},
+						lexer.Token{Options: options, Type: lexer.UPDATE, Value: "UPDATE"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "user"},
 					},
 				},
-				&group.Set{
+				&reindenters.Set{
+					Options: options,
 					Element: []lexer.Reindenter{
-						lexer.Token{Type: lexer.SET, Value: "SET"},
-						lexer.Token{Type: lexer.IDENT, Value: "point"},
-						lexer.Token{Type: lexer.IDENT, Value: "="},
-						lexer.Token{Type: lexer.IDENT, Value: "0"},
+						lexer.Token{Options: options, Type: lexer.SET, Value: "SET"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "point"},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "="},
+						lexer.Token{Options: options, Type: lexer.IDENT, Value: "0"},
 					},
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
-		got, err := ParseTokens(tt.tokenSource)
+		got, err := ParseTokens(tt.tokenSource, options)
 		if err != nil {
 			t.Errorf("ERROR: %#v", err)
 		}
