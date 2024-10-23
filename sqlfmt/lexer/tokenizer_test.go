@@ -8,7 +8,7 @@ import (
 )
 
 func TestTokenize(t *testing.T) {
-	var testingSQLStatement = strings.Trim(`select name, age,sum, sum(case xxx) from user where name xxx and age = 'xxx' limit 100 except 100`, "`")
+	var testingSQLStatement = strings.Trim(`select name, age, sum, sum(case xxx) from users where name xxx and age = 'xxx' limit 100 except 100`, "`")
 	want := []Token{
 		{Type: SELECT, Value: "SELECT"},
 		{Type: IDENT, Value: "name"},
@@ -23,7 +23,7 @@ func TestTokenize(t *testing.T) {
 		{Type: IDENT, Value: "xxx"},
 		{Type: ENDPARENTHESIS, Value: ")"},
 		{Type: FROM, Value: "FROM"},
-		{Type: IDENT, Value: "user"},
+		{Type: IDENT, Value: "users"},
 		{Type: WHERE, Value: "WHERE"},
 		{Type: IDENT, Value: "name"},
 		{Type: IDENT, Value: "xxx"},

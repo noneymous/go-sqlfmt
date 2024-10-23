@@ -30,8 +30,8 @@ func NewRetriever(tokens []lexer.Token, options *lexer.Options) (*Retriever, err
 	}
 
 	// Create initial Retriever with according type, tokens and end types
-	typeFirstToken := tokens[0].Type
-	switch typeFirstToken {
+	firstTokenType := tokens[0].Type
+	switch firstTokenType {
 	case lexer.SELECT:
 		return &Retriever{options: options, tokens: tokens, endTypes: lexer.EndOfSelect}, nil
 	case lexer.FROM:
@@ -74,6 +74,8 @@ func NewRetriever(tokens []lexer.Token, options *lexer.Options) (*Retriever, err
 		return &Retriever{options: options, tokens: tokens, endTypes: lexer.EndOfInsert}, nil
 	case lexer.VALUES:
 		return &Retriever{options: options, tokens: tokens, endTypes: lexer.EndOfValues}, nil
+	case lexer.FUNCTIONKEYWORD:
+		return &Retriever{options: options, tokens: tokens, endTypes: lexer.EndOfFunctionKeyword}, nil
 	case lexer.FUNCTION:
 		return &Retriever{options: options, tokens: tokens, endTypes: lexer.EndOfFunction}, nil
 	case lexer.TYPE:
@@ -226,6 +228,11 @@ func (r *Retriever) processSegment() (int, error) {
 
 // isEndToken determines if the token at index idx is an end token
 func (r *Retriever) isEndToken(idx int) bool {
+
+	// Return true if there are no end types defined, meaning that anything is an end type
+	if len(r.endTypes) == 0 {
+		return true
+	}
 
 	// Get tokens to work with
 	tokenFirst := r.tokens[0]

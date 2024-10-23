@@ -55,14 +55,19 @@ const (
 	WHITESPACE
 	NEWLINE
 	TAB
-	FUNCTION
 	COMMA
+	COLON
+	DOUBLECOLON
+	FUNCTION
+	FUNCTIONKEYWORD
 	STARTPARENTHESIS
 	ENDPARENTHESIS
 	STARTBRACKET
 	ENDBRACKET
 	STARTBRACE
 	ENDBRACE
+	QUOTEAREA
+	SURROUNDING
 	TYPE
 	IDENT  // field or table name
 	STRING // values surrounded with single quotes
@@ -136,14 +141,6 @@ const (
 	AT
 	LOCK
 	WITH
-
-	/*
-	*	Custom types used by sqlfmt for intermediate representations
-	 */
-	QUOTEAREA
-	SURROUNDING
-	COLON
-	DOUBLECOLON
 )
 
 // End keywords of each clause
@@ -161,17 +158,18 @@ var (
 	EndOfLimitClause = []TokenType{UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
 	EndOfParenthesis = []TokenType{ENDPARENTHESIS, EOF}
 	// 微妙
-	EndOfTieClause = []TokenType{SELECT, EOF}
-	EndOfUpdate    = []TokenType{WHERE, SET, RETURNING, EOF}
-	EndOfSet       = []TokenType{WHERE, RETURNING, EOF}
-	EndOfReturning = []TokenType{EOF}
-	EndOfDelete    = []TokenType{WHERE, FROM, EOF}
-	EndOfInsert    = []TokenType{VALUES, EOF}
-	EndOfValues    = []TokenType{UPDATE, RETURNING, EOF}
-	EndOfFunction  = []TokenType{ENDPARENTHESIS, EOF}
-	EndOfTypeCast  = []TokenType{ENDPARENTHESIS, EOF}
-	EndOfLock      = []TokenType{EOF}
-	EndOfWith      = []TokenType{EOF}
+	EndOfTieClause       = []TokenType{SELECT, EOF}
+	EndOfUpdate          = []TokenType{WHERE, SET, RETURNING, EOF}
+	EndOfSet             = []TokenType{WHERE, RETURNING, EOF}
+	EndOfReturning       = []TokenType{EOF}
+	EndOfDelete          = []TokenType{WHERE, FROM, EOF}
+	EndOfInsert          = []TokenType{VALUES, EOF}
+	EndOfValues          = []TokenType{UPDATE, RETURNING, EOF}
+	EndOfFunction        = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfFunctionKeyword []TokenType // No end types means everything is an end type
+	EndOfTypeCast        = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfLock            = []TokenType{EOF}
+	EndOfWith            = []TokenType{EOF}
 )
 
 // Token types that contain the keyword to make subGroup
