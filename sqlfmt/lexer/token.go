@@ -67,6 +67,7 @@ const (
 	STARTBRACE
 	ENDBRACE
 	QUOTEAREA
+	COMPARATOR
 	SURROUNDING
 	TYPE
 	IDENT  // field or table name
@@ -231,11 +232,6 @@ func (t Token) IsKeywordWithoutLinebreak() bool {
 	return t.Type == FROM || t.Type == WHERE || t.Type == EXISTS || t.Type == IN || t.Type == ANY || t.Type == AS
 }
 
-func (t Token) IsIdentWithoutLinebreak() bool {
-	return t.Type == IDENT && (t.Value == "=" ||
-		t.Value == ">" ||
-		t.Value == "<" ||
-		t.Value == ">=" ||
-		t.Value == "<=" ||
-		t.Value == "<>")
+func (t Token) IsComparator() bool {
+	return t.Type == COMPARATOR
 }

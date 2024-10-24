@@ -18,14 +18,14 @@ func TestFormat(t *testing.T) {
 		 */
 		{
 			name: "Simple query with high variety",
-			sql:  `SELECT tble1.col1 AS a, ( SELECT unit FROM tble2 WHERE col4 > 14 AND col5 == 'test' ) AS b, tble1.col3 AS c FROM ( SELECT col1, col2, col3, col4 FROM contents WHERE active = true AND attr2 = true AND attr3 = true AND attr4 = true AND attr5 = true AND attr6 IN ( SELECT * FROM attributes ) AND attr6 = true AND attr7 = true ) AS tble1 WHERE col3 ILIKE '%substr%' AND col4 > ( SELECT MAX(salary) FROM employees ) LIMIT 1`,
+			sql:  `SELECT tble1.col1 AS a, ( SELECT unit FROM tble2 WHERE col4 > 14 AND col5 = 'test' ) AS b, tble1.col3 AS c FROM ( SELECT col1, col2, col3, col4 FROM contents WHERE active = true AND attr2 = true AND attr3 = true AND attr4 = true AND attr5 = true AND attr6 IN ( SELECT * FROM attributes ) AND attr6 = true AND attr7 = true ) AS tble1 WHERE col3 ILIKE '%substr%' AND col4 > ( SELECT MAX(salary) FROM employees ) LIMIT 1`,
 			want: `SELECT
   tble1.col1 AS a,
   (
     SELECT
       unit
     FROM tble2
-    WHERE col4 > 14 AND col5 == 'test'
+    WHERE col4 > 14 AND col5 = 'test'
   ) AS b,
   tble1.col3 AS c
 FROM (
@@ -158,6 +158,69 @@ FROM cte_quantity;`,
 		},
 
 		/*
+		 * Comparators
+		 */
+		{
+			name: "Basic comparators",
+			sql:  `SELECT * FROM tble WHERE a=1 AND b!=2 AND c<>3 AND d>4 AND e<5 AND f>=6 AND g<=7`,
+			want: `SELECT
+  *
+FROM tble
+WHERE
+  a = 1 AND
+  b != 2 AND
+  c <> 3 AND
+  d > 4 AND
+  e < 5 AND
+  f >= 6 AND
+  g <= 7`,
+		},
+		{
+			name: "Basic comparators formatted into one line",
+			sql:  `SELECT * FROM tble WHERE a=1 AND b> 2 AND c   <   3`,
+			want: `SELECT
+  *
+FROM tble
+WHERE a = 1 AND b > 2 AND c < 3`,
+		},
+		{
+			name: "Advanced comparators",
+			sql:  `SELECT * FROM tble WHERE a~~1 AND b~~*2 AND c!~~3 AND d!~~*4`,
+			want: `SELECT
+  *
+FROM tble
+WHERE
+  a ~~ 1 AND
+  b ~~* 2 AND
+  c !~~ 3 AND
+  d !~~* 4`,
+		},
+		{
+			name: "Invalid comparators",
+			sql:  `SELECT * FROM tble WHERE a~~~1 AND b!2 AND c!== 3 AND d ===4`,
+			want: `SELECT
+  *
+FROM tble
+WHERE
+  a~~~1 AND
+  b!2 AND
+  c!== 3 AND
+  d ===4`,
+		},
+		{
+			name: "Invalid comparators 2",
+			sql:  `SELECT * FROM tble WHERE a    !=*  1 AND b<>>2 AND c><3 AND d <==4 `,
+			want: `SELECT
+  *
+FROM tble
+WHERE
+  a !=* 1 AND
+  b<>>2 AND
+  c><3 AND
+  d <==4`,
+		},
+
+		/*
 		 * Some complex real-world queries
 		 */
 		{
@@ -227,7 +290,7 @@ WHERE EXISTS (
   ty.typname
 FROM pg_catalog.pg_attribute AT
 LEFT JOIN pg_catalog.pg_type ty ON (ty.oid = at.atttypid)
-WHERE attrelid=33176310:: oid AND attnum = ANY (
+WHERE attrelid = 33176310:: oid AND attnum = ANY (
   (
     SELECT
       con.conkey
@@ -246,7 +309,7 @@ WHERE attrelid=33176310:: oid AND attnum = ANY (
   ty.typname
 FROM pg_catalog.pg_attribute AT
 LEFT JOIN pg_catalog.pg_type ty ON (ty.oid = at.atttypid)
-WHERE attrelid=33176310:: oid AND attnum = ANY (
+WHERE attrelid = 33176310:: oid AND attnum = ANY (
   (
     SELECT
       con.conkey
@@ -281,6 +344,18 @@ WHERE attrelid=33176310:: oid AND attnum = ANY (
 			sql:  `SET client_encoding TO 'UTF8'`,
 			want: `SET
   client_encoding TO 'UTF8'`,
+		},
+		{
+			name: "SET query with unformatted equal 1",
+			sql:  `SET client_encoding= 'UNICODE'`,
+			want: `SET
+  client_encoding = 'UNICODE'`,
+		},
+		{
+			name: "SET query with unformatted equal 2",
+			sql:  `SET client_min_messages=notice`,
+			want: `SET
+  client_min_messages = notice`,
 		},
 		{
 			name: "Type cast OID",

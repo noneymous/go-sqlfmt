@@ -16,6 +16,16 @@ type tokenizer struct {
 // wrap affected names with double quotes. Otherwise, a name might be understood as a function keyword. In
 // other dialects clients wouldn't care and quote these names. Disable keyword functions to avoid ambiguous
 // names to be capitalized like function names.
+// Affected names:
+//   - LOCALTIME
+//   - LOCALTIMESTAMP
+//   - CURRENT_DATE
+//   - CURRENT_TIME
+//   - CURRENT_TIMESTAMP
+//   - CURRENT_USER
+//   - CURRENT_CATALOG
+//   - SESSION_USER
+//   - USER
 var DisableFunctionKeywords = false
 
 // Tokenize src and returns slice of Token. Ignores Token of white-space, new-line and tab.
@@ -64,6 +74,9 @@ func Tokenize(src string) ([]Token, error) {
 
 // scan reads the first character of t.r and returns it as a Token
 func (t *tokenizer) scan() (Token, error) {
+
+	// Check if comparator sequence starts with next read
+	isComparator, _ := peekComparator(t.r)
 
 	// Read first character
 	ch, _, errCh := t.r.ReadRune()
@@ -127,6 +140,14 @@ func (t *tokenizer) scan() (Token, error) {
 		// Return with error in case of unexpected value
 		return Token{}, fmt.Errorf("unexpected punctuation value: %v", buf.String())
 
+	case isComparator != "":
+
+		// First character of comparator was already read, read missing ones to remove them form buffer
+		for i := len(isComparator) - 1; i > 0; i-- {
+			_, _, _ = t.r.ReadRune()
+		}
+		return Token{Type: COMPARATOR, Value: isComparator}, nil
+
 	case isSingleQuote(ch): // scan string which appears in the SQL statement surrounded by single quote such as 'xxxxxxxx'
 
 		// read until next single-quote appears
@@ -155,7 +176,21 @@ func (t *tokenizer) scan() (Token, error) {
 	default: // scan keyword token and parameter names and values
 
 		// Read additional characters until value is complete
+		var comparator = ""
+		var comparatorErr error
 		for {
+
+			// Check if comparator can be detected in the next bytes, but only do so if no broken
+			// comparator was peeked previously. otherwise an invalid symbol sequence might partially
+			// be understood as a comparator.
+			if comparatorErr == nil {
+				comparator, comparatorErr = peekComparator(t.r)
+				if comparator != "" {
+					break // Nothing was read yet, no need to unread
+				}
+			}
+
+			// Read next rune
 			chNext, _, errNext := t.r.ReadRune()
 			if errNext != nil {
 				if errNext.Error() == "EOF" {
@@ -165,13 +200,14 @@ func (t *tokenizer) scan() (Token, error) {
 				}
 			}
 
-			// Unread last terminating character or add to buffer
+			// Stop reading value if end is detected. Unread last unnecessary character
 			if isPunctuation(chNext) || isSingleQuote(chNext) || isWhitespace(chNext) || isNewline(chNext) || isTab(chNext) {
 				_ = t.r.UnreadRune()
 				break
-			} else {
-				buf.WriteRune(chNext)
 			}
+
+			// Append character to value
+			buf.WriteRune(chNext)
 		}
 
 		// Get token key and value
@@ -200,7 +236,7 @@ func (t *tokenizer) scan() (Token, error) {
 			// parenthesis-less function "USER". To address ambiguity, Postgres clients must put "user" into
 			// double quotes. However, in other databases this ambiguity does not exist, so clients would never
 			// double quote in this situation. By default, these function keywords are enabled and handled as such.
-			if ttype == FUNCTIONKEYWORD && DisableFunctionKeywords { // Most probably not a function in
+			if ttype == FUNCTIONKEYWORD && DisableFunctionKeywords {
 				return Token{Type: IDENT, Value: buf.String()}, nil
 			}
 
@@ -234,16 +270,6 @@ func (t *tokenizer) peekSubsequent(isCharacter func(ch rune) bool) bool {
 	} else {
 		return false
 	}
-}
-
-var punctuationMap = map[string]TokenType{
-	"(": STARTPARENTHESIS,
-	")": ENDPARENTHESIS,
-	"[": STARTBRACKET,
-	"]": ENDBRACKET,
-	"{": STARTBRACE,
-	"}": ENDBRACKET,
-	",": COMMA,
 }
 
 var keywordMap = map[string]TokenType{
@@ -312,24 +338,28 @@ var keywordMap = map[string]TokenType{
 	"AT":          AT,
 	"LOCK":        LOCK,
 	"WITH":        WITH,
-	"BIG":         TYPE,
-	"BIGSERIAL":   TYPE,
-	"BOOLEAN":     TYPE,
-	"CHAR":        TYPE,
-	"BIT":         TYPE,
-	"TEXT":        TYPE,
-	"INTEGER":     TYPE,
-	"NUMERIC":     TYPE,
-	"DECIMAL":     TYPE,
-	"DEC":         TYPE,
-	"FLOAT":       TYPE,
-	"CUSTOMTYPE":  TYPE,
-	"VARCHAR":     TYPE,
-	"VARBIT":      TYPE,
-	"TIMESTAMP":   TYPE,
-	"TIME":        TYPE,
-	"SECOND":      TYPE,
-	"INTERVAL":    TYPE,
+
+	/*
+	 * Data types
+	 */
+	"BIG":        TYPE,
+	"BIGSERIAL":  TYPE,
+	"BOOLEAN":    TYPE,
+	"CHAR":       TYPE,
+	"BIT":        TYPE,
+	"TEXT":       TYPE,
+	"INTEGER":    TYPE,
+	"NUMERIC":    TYPE,
+	"DECIMAL":    TYPE,
+	"DEC":        TYPE,
+	"FLOAT":      TYPE,
+	"CUSTOMTYPE": TYPE,
+	"VARCHAR":    TYPE,
+	"VARBIT":     TYPE,
+	"TIMESTAMP":  TYPE,
+	"TIME":       TYPE,
+	"SECOND":     TYPE,
+	"INTERVAL":   TYPE,
 
 	/*
 	 * Additional Postgres functions without parenthesis.
@@ -879,6 +909,84 @@ var functionMap = map[string]TokenType{
 	"PERCENTILE_DISC":              FUNCTION,
 }
 
+var comparatorMap = map[string]TokenType{
+	"~~":   COMPARATOR, // LIKE
+	"~~*":  COMPARATOR, // ILIKE
+	"!~~":  COMPARATOR, // NOT LIKE
+	"!~~*": COMPARATOR, // NOT ILIKE
+	"=":    COMPARATOR,
+	"!=":   COMPARATOR, // NOT EQUAL
+	"<>":   COMPARATOR, // NOT EQUAL
+	">":    COMPARATOR,
+	"<":    COMPARATOR,
+	">=":   COMPARATOR,
+	"<=":   COMPARATOR,
+}
+
+// peekComparator peeks into the subsequent characters trying to identify valid comparator substrings, but
+// tries not to match on broken substrings that are not really valid comparators.
+func peekComparator(r *bufio.Reader) (string, error) {
+
+	// Peek step by step into subsequent characters to search for a valid comparator
+	steps := 1
+	sequence := ""
+	for {
+		b, errPeek := r.Peek(steps)
+		if errPeek != nil {
+			break
+		}
+
+		// Convert to string and get last character to analyze
+		s := string(b)
+		ch := s[len(s)-1]
+
+		// Check if character is plausible comparator
+		if strings.Contains("~*!=<>", string(ch)) {
+			sequence += string(ch)
+		} else {
+			break
+		}
+
+		// Increment bytes to read
+		steps++
+	}
+
+	// Check if read sequence is valid comparator
+	if sequence != "" {
+
+		// Return comparator sequence
+		if _, ok := comparatorMap[sequence]; ok {
+			return sequence, nil
+		}
+
+		// Return error if invalid comparator sequence was detected
+		return "", fmt.Errorf("invalid comparator sequence: %s", sequence)
+	}
+
+	// Return empty string if sequence was not a comparator
+	return "", nil
+}
+
+var punctuationMap = map[string]TokenType{
+	"(": STARTPARENTHESIS,
+	")": ENDPARENTHESIS,
+	"[": STARTBRACKET,
+	"]": ENDBRACKET,
+	"{": STARTBRACE,
+	"}": ENDBRACKET,
+	",": COMMA,
+	":": COLON,
+}
+
+func isPunctuation(ch rune) bool {
+	_, is := punctuationMap[string(ch)]
+	return is
+}
+
+func isNewline(ch rune) bool {
+	return ch == '\n'
+}
+
 func isWhitespace(ch rune) bool {
 	return ch == ' ' || ch == '　'
 }
@@ -887,44 +995,12 @@ func isTab(ch rune) bool {
 	return ch == '\t'
 }
 
-func isNewline(ch rune) bool {
-	return ch == '\n'
-}
-
-func isComma(ch rune) bool {
-	return ch == ','
-}
-
 func isColon(ch rune) bool {
 	return ch == ':'
 }
 
 func isParenthesisStart(ch rune) bool {
 	return ch == '('
-}
-
-func isParenthesisEnd(ch rune) bool {
-	return ch == ')'
-}
-
-func isBracketStart(ch rune) bool {
-	return ch == '['
-}
-
-func isBracketEnd(ch rune) bool {
-	return ch == ']'
-}
-
-func isBraceStart(ch rune) bool {
-	return ch == '{'
-}
-
-func isBraceEnd(ch rune) bool {
-	return ch == '}'
-}
-
-func isPunctuation(ch rune) bool {
-	return isComma(ch) || isColon(ch) || isParenthesisStart(ch) || isParenthesisEnd(ch) || isBracketStart(ch) || isBracketEnd(ch) || isBraceStart(ch) || isBraceEnd(ch)
 }
 
 func isSingleQuote(ch rune) bool {

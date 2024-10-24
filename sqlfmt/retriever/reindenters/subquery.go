@@ -44,7 +44,7 @@ func (group *Subquery) Reindent(buf *bytes.Buffer, parent []lexer.Reindenter, pa
 		if token, ok := el.(lexer.Token); ok {
 			group.writeSubquery(buf, token, previousParentToken, group.IndentLevel, group.ColumnCount, group.IsColumnArea)
 		} else {
-			if !previousParentToken.IsKeywordWithoutLinebreak() && !previousParentToken.IsIdentWithoutLinebreak() {
+			if !previousParentToken.IsKeywordWithoutLinebreak() && !previousParentToken.IsComparator() {
 				el.IncrementIndentLevel(1)
 			}
 			_ = el.Reindent(buf, elements, i)
@@ -70,7 +70,7 @@ func (group *Subquery) writeSubquery(buf *bytes.Buffer, token, previousParentTok
 	switch {
 
 	// Open parenthesis in same line if compatible with previous keyword (FROM, WHERE, EXISTS,...)
-	case previousParentToken.IsKeywordWithoutLinebreak() || previousParentToken.IsIdentWithoutLinebreak():
+	case previousParentToken.IsKeywordWithoutLinebreak() || previousParentToken.IsComparator():
 		if token.Type == lexer.STARTPARENTHESIS {
 			buf.WriteString(fmt.Sprintf("%s%s", group.Options.Whitespace, token.Value))
 		} else if token.Type == lexer.ENDPARENTHESIS {
