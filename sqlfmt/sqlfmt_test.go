@@ -2,7 +2,7 @@ package sqlfmt
 
 import (
 	"fmt"
-	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/reindenters"
 	"testing"
 )
 
@@ -520,14 +520,14 @@ FROM table`,
 	 * Execute test cases
 	 */
 	for _, tt := range formatTestingData {
-		options := lexer.DefaultOptions()
+		options := reindenters.DefaultOptions()
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := Format(tt.sql, options)
 			if err != nil {
 				t.Errorf("%v", err)
 			} else {
 				if tt.want != got {
-					t.Errorf("\n=======================\n=== WANT =============>\n%s\n=======================\n=== GOT ==============>\n%s\n=======================", tt.want, got)
+					t.Errorf("\n=======================\n=== GOT ==============>\n%s\n=======================\n=== WANT =============>\n%s\n=======================", got, tt.want)
 				} else {
 					fmt.Println(fmt.Sprintf("%s\n%s", got, "========================================================================"))
 				}
@@ -552,7 +552,7 @@ func TestCompare(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	got := removeSymbol("select xxx from xxx")
+	got := removeSymbols("select xxx from xxx")
 	want := "selectxxxfromxxx"
 	if got != want {
 		t.Errorf("want %#v, got %#v", want, got)

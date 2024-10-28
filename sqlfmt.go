@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/noneymous/go-sqlfmt/sqlfmt"
-	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/reindenters"
 	"io"
 	"log"
 	"os"
@@ -20,7 +20,7 @@ var (
 	list    = flag.Bool("l", false, "list files whose formatting differs from goreturns's")
 	write   = flag.Bool("w", false, "write result to (source) file instead of stdout")
 	doDiff  = flag.Bool("d", false, "display diffs instead of rewriting files")
-	options = &lexer.Options{
+	options = &reindenters.Options{
 		Padding:    "",
 		Indent:     "  ",
 		Newline:    "\n",
@@ -67,9 +67,9 @@ func main() {
 			walkDir(path)
 		default:
 			if isGoFile(dir) {
-				errProcess := processFile(path, nil, os.Stdout)
-				if errProcess != nil {
-					log.Fatal(errProcess)
+				errParse := processFile(path, nil, os.Stdout)
+				if errParse != nil {
+					log.Fatal(errParse)
 				}
 			}
 		}
@@ -99,9 +99,9 @@ func processFile(filename string, in io.Reader, out io.Writer) error {
 		return errRead
 	}
 
-	res, errProcess := sqlfmt.FormatFile(filename, src, options)
-	if errProcess != nil {
-		return errProcess
+	res, errParse := sqlfmt.FormatFile(filename, src, options)
+	if errParse != nil {
+		return errParse
 	}
 
 	if !bytes.Equal(src, res) {

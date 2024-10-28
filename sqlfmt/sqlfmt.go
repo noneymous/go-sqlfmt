@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 	"github.com/noneymous/go-sqlfmt/sqlfmt/parser"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/reindenters"
 	"strings"
 )
 
 // Format parse tokens, and build
-func Format(sql string, options *lexer.Options) (string, error) {
+func Format(sql string, options *reindenters.Options) (string, error) {
 
 	// Tokenize SQL query string
 	tokens, errTokens := lexer.Tokenize(sql)
@@ -19,7 +20,7 @@ func Format(sql string, options *lexer.Options) (string, error) {
 	}
 
 	// Parse tokens and group them into a sequence of query segments
-	tokensParsed, errTokensParsed := parser.ParseTokens(tokens, options)
+	tokensParsed, errTokensParsed := parser.Parse(tokens, options)
 	if errTokensParsed != nil {
 		return "", fmt.Errorf("parse error: %w", errTokensParsed)
 	}
@@ -72,8 +73,8 @@ func addPadding(s string, leftPadding string) string {
 func compare(sql string, formattedSql string) bool {
 
 	// Unify inputs
-	before := removeSymbol(sql)
-	after := removeSymbol(formattedSql)
+	before := removeSymbols(sql)
+	after := removeSymbols(formattedSql)
 
 	// Compare strings
 	if v := strings.Compare(before, after); v != 0 {
@@ -84,8 +85,8 @@ func compare(sql string, formattedSql string) bool {
 	return true
 }
 
-// removeSymbol removes whitespaces, tabs and newlines from string
-func removeSymbol(s string) string {
+// removeSymbols removes semantically unnecessary characters, such as whitespaces, tabs and newlines, for comparison
+func removeSymbols(s string) string {
 	var result []rune
 	for _, r := range s {
 		if string(r) == "\n" || string(r) == " " || string(r) == "\t" || string(r) == "　" {

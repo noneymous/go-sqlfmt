@@ -7,33 +7,22 @@ import (
 	"strings"
 )
 
-type tokenizer struct {
-	r *bufio.Reader
-}
-
 // DisableFunctionKeywords - Postgres has a few functions without parenthesis. They look like normal keywords,
 // but they might conflict with table/column names. To address ambiguity, Postgres clients must therefore
 // wrap affected names with double quotes. Otherwise, a name might be understood as a function keyword. In
 // other dialects clients wouldn't care and quote these names. Disable keyword functions to avoid ambiguous
 // names to be capitalized like function names.
-// Affected names:
-//   - LOCALTIME
-//   - LOCALTIMESTAMP
-//   - CURRENT_DATE
-//   - CURRENT_TIME
-//   - CURRENT_TIMESTAMP
-//   - CURRENT_USER
-//   - CURRENT_CATALOG
-//   - SESSION_USER
-//   - USER
+// Affected names: LOCALTIME, LOCALTIMESTAMP, CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP, CURRENT_USER,
+// CURRENT_CATALOG, SESSION_USER, USER
 var DisableFunctionKeywords = false
 
-// Tokenize src and returns slice of Token. Ignores Token of white-space, new-line and tab.
-func Tokenize(src string) ([]Token, error) {
+// Tokenize sql string and returns slice of Token. Ignores Token of white-space, new-line and tab, as
+// they have no semantic meaning.
+func Tokenize(sql string) ([]Token, error) {
 
 	// Prepare tokenizer
 	t := &tokenizer{
-		r: bufio.NewReader(strings.NewReader(src)),
+		r: bufio.NewReader(strings.NewReader(sql)),
 	}
 
 	// Execute tokenizer
@@ -72,13 +61,25 @@ func Tokenize(src string) ([]Token, error) {
 	}
 }
 
-// scan reads the first character of t.r and returns it as a Token
+// tokenizer holds a working buffer to process and defines functions to execute against it
+type tokenizer struct {
+	r *bufio.Reader
+}
+
+// scan reads the first character of the buffer and, depending on it, proceeds to read additional ones until a
+// full token is detected and returns it
 func (t *tokenizer) scan() (Token, error) {
 
-	// Check if comparator sequence starts with next read
-	isComparator, _ := peekComparator(t.r)
+	// Peek if next characters represent a valid comparator. If so, read the according amount of bytes
+	// from the buffer and return comparator token
+	if comparatorNext, _ := peekComparator(t.r); comparatorNext != "" {
+		for i := len(comparatorNext); i > 0; i-- {
+			_, _, _ = t.r.ReadRune()
+		}
+		return Token{Type: COMPARATOR, Value: comparatorNext}, nil
+	}
 
-	// Read first character
+	// Read first character from buffer
 	ch, _, errCh := t.r.ReadRune()
 	if errCh != nil {
 		if errCh.Error() == "EOF" {
@@ -87,24 +88,19 @@ func (t *tokenizer) scan() (Token, error) {
 		return Token{}, errCh
 	}
 
-	// Prepare buffer for current value
+	// Prepare buffer for token and write read character to it
 	var buf bytes.Buffer
-
-	// Put already read character into buffer
 	buf.WriteRune(ch)
 
 	// Decide character, create and return token
 	switch {
 	case isWhitespace(ch):
-
 		return Token{Type: WHITESPACE, Value: buf.String()}, nil
 
 	case isNewline(ch):
-
 		return Token{Type: NEWLINE, Value: buf.String()}, nil
 
 	case isTab(ch):
-
 		return Token{Type: TAB, Value: buf.String()}, nil
 
 	case isPunctuation(ch):
@@ -127,30 +123,22 @@ func (t *tokenizer) scan() (Token, error) {
 			if isColon(nextCh) {
 				return Token{Type: DOUBLECOLON, Value: fmt.Sprintf("%s%s", buf.String(), string(nextCh))}, nil
 			} else {
-				_ = t.r.UnreadRune() // Revert last read, because already belonged to the next token
+				_ = t.r.UnreadRune() // Revert last read, because it belonged to the next token
 				return Token{Type: COLON, Value: buf.String()}, nil
 			}
 		}
 
-		// Lookup token type in punctuation map
+		// Lookup other token type in punctuation map
 		if ttype, ok := punctuationMap[buf.String()]; ok {
 			return Token{Type: ttype, Value: buf.String()}, nil
 		}
 
 		// Return with error in case of unexpected value
-		return Token{}, fmt.Errorf("unexpected punctuation value: %v", buf.String())
+		return Token{}, fmt.Errorf("invalid punctuation value: %v", buf.String())
 
-	case isComparator != "":
+	case isSingleQuote(ch):
 
-		// First character of comparator was already read, read missing ones to remove them form buffer
-		for i := len(isComparator) - 1; i > 0; i-- {
-			_, _, _ = t.r.ReadRune()
-		}
-		return Token{Type: COMPARATOR, Value: isComparator}, nil
-
-	case isSingleQuote(ch): // scan string which appears in the SQL statement surrounded by single quote such as 'xxxxxxxx'
-
-		// read until next single-quote appears
+		// Read subsequent characters until closing single quote
 		for {
 			chNext, _, errNext := t.r.ReadRune()
 			if errNext != nil {
@@ -164,7 +152,7 @@ func (t *tokenizer) scan() (Token, error) {
 			// Append character to value
 			buf.WriteRune(chNext)
 
-			// Break loop
+			// Break loop once closing quote is found
 			if isSingleQuote(chNext) {
 				break
 			}
@@ -175,14 +163,15 @@ func (t *tokenizer) scan() (Token, error) {
 
 	default: // scan keyword token and parameter names and values
 
-		// Read additional characters until value is complete
+		// Read subsequent characters until value is complete
 		var comparator = ""
 		var comparatorErr error
 		for {
 
-			// Check if comparator can be detected in the next bytes, but only do so if no broken
-			// comparator was peeked previously. otherwise an invalid symbol sequence might partially
-			// be understood as a comparator.
+			// Stop if next character starts comparator sequence. But only if previous check didn't return
+			// an invalid comparator sequence, otherwise an invalid comparator might turn into a valid one
+			// after reading further bytes. For example, ~~~ might be understood as ~~. An input like 'a~~~1'
+			// would be interpreted as 'a~ ~~1'.
 			if comparatorErr == nil {
 				comparator, comparatorErr = peekComparator(t.r)
 				if comparator != "" {
@@ -190,7 +179,7 @@ func (t *tokenizer) scan() (Token, error) {
 				}
 			}
 
-			// Read next rune
+			// Read next character
 			chNext, _, errNext := t.r.ReadRune()
 			if errNext != nil {
 				if errNext.Error() == "EOF" {
@@ -200,7 +189,7 @@ func (t *tokenizer) scan() (Token, error) {
 				}
 			}
 
-			// Stop reading value if end is detected. Unread last unnecessary character
+			// Stop if next character doesn't belong to the value anymore. Unread last unnecessary character.
 			if isPunctuation(chNext) || isSingleQuote(chNext) || isWhitespace(chNext) || isNewline(chNext) || isTab(chNext) {
 				_ = t.r.UnreadRune()
 				break
@@ -210,12 +199,12 @@ func (t *tokenizer) scan() (Token, error) {
 			buf.WriteRune(chNext)
 		}
 
-		// Get token key and value
+		// Prepare default lookup key and token value
 		key := strings.ToUpper(buf.String())
 		val := key
 
 		// Sanitize key and value, if they include a target operator '.'.
-		// If token value contains period, it's specifying a target, e.g. a table. Drop that for the lookup.
+		// If token value contains period, it's specifying a target, e.g. a table. Put that aside for the lookup.
 		if strings.Contains(buf.String(), ".") {
 			slice := strings.Split(buf.String(), ".")
 			key = strings.ToUpper(slice[len(slice)-1])
@@ -296,6 +285,7 @@ var keywordMap = map[string]TokenType{
 	"OR":          OR,
 	"IN":          IN,
 	"ANY":         ANY,
+	"ARRAY":       ARRAY,
 	"IS":          IS,
 	"NOT":         NOT,
 	"NULL":        NULL,

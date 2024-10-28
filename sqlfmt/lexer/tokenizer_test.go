@@ -3,10 +3,9 @@ package lexer
 import (
 	"bufio"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestTokenize(t *testing.T) {
@@ -44,7 +43,7 @@ func TestTokenize(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func Test_readComparatorAndRevert(t *testing.T) {
+func Test_peekComparator(t *testing.T) {
 
 	tests := []struct {
 		testSequence   string

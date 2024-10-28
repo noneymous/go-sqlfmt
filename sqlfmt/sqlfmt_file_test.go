@@ -1,14 +1,14 @@
 package sqlfmt
 
 import (
-	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/reindenters"
 	"io"
 	"os"
 	"testing"
 )
 
 func TestFormatFile(t *testing.T) {
-	options := lexer.DefaultOptions()
+	options := reindenters.DefaultOptions()
 	tests := []struct {
 		name     string
 		filename string
