@@ -2,7 +2,7 @@ package sqlfmt
 
 import (
 	"fmt"
-	"github.com/noneymous/go-sqlfmt/sqlfmt/reindenters"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/formatters"
 	"testing"
 )
 
@@ -582,7 +582,7 @@ FROM table`,
 	 * Execute test cases
 	 */
 	for _, tt := range formatTestingData {
-		options := reindenters.DefaultOptions()
+		options := formatters.DefaultOptions()
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := Format(tt.sql, options)
 			if err != nil {

@@ -4,31 +4,31 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/formatters"
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 	"github.com/noneymous/go-sqlfmt/sqlfmt/parser"
-	"github.com/noneymous/go-sqlfmt/sqlfmt/reindenters"
 	"strings"
 )
 
 // Format parse tokens, and build
-func Format(sql string, options *reindenters.Options) (string, error) {
+func Format(sql string, options *formatters.Options) (string, error) {
 
 	// Tokenize SQL query string
-	tokens, errTokens := lexer.Tokenize(sql)
-	if errTokens != nil {
-		return "", fmt.Errorf("tokenization error: %w", errTokens)
+	tokens, errTokenize := lexer.Tokenize(sql)
+	if errTokenize != nil {
+		return "", fmt.Errorf("tokenization error: %w", errTokenize)
 	}
 
 	// Parse tokens and group them into a sequence of query segments
-	tokensParsed, errTokensParsed := parser.Parse(tokens, options)
-	if errTokensParsed != nil {
-		return "", fmt.Errorf("parse error: %w", errTokensParsed)
+	tokensParsed, errParse := parser.Parse(tokens, options)
+	if errParse != nil {
+		return "", fmt.Errorf("parse error: %w", errParse)
 	}
 
 	// Format parsed tokens into prettified and uniformly formatted SQL string
 	var buf bytes.Buffer
-	for _, token := range tokensParsed {
-		if err := token.Reindent(&buf, nil, 0); err != nil {
+	for _, tokenParsed := range tokensParsed {
+		if err := tokenParsed.Format(&buf, nil, 0); err != nil {
 			return "", err
 		}
 	}

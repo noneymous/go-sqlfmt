@@ -2,15 +2,15 @@ package parser
 
 import (
 	"fmt"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/formatters"
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
-	"github.com/noneymous/go-sqlfmt/sqlfmt/reindenters"
 )
 
 const joinStartRange = 3
 
-// Parse parses a sequence of tokens returning a logically grouped slice of Reindenter.
-// Each Reindenter is a logical segment of an SQL query. It may also be a group of such.
-func Parse(tokens []lexer.Token, options *reindenters.Options) ([]reindenters.Reindenter, error) {
+// Parse parses a sequence of tokens returning a logically grouped slice of Formatters.
+// Each Formatter is a logical segment of an SQL query. It may also be a group of such.
+func Parse(tokens []lexer.Token, options *formatters.Options) ([]formatters.Formatter, error) {
 
 	// Check if tokenized string is actually an SQL query
 	t := tokens[0].Type
@@ -36,81 +36,81 @@ func Parse(tokens []lexer.Token, options *reindenters.Options) ([]reindenters.Re
 }
 
 // Parser initiates with a sequence of lexer tokens to be processed by the Parse() function.
-// Furthermore, it holds all necessary state variables and a set of options to be assigned to each Reindenters.
+// Furthermore, it holds all necessary state variables and a set of options to be assigned to each Formatter.
 type Parser struct {
-	options *reindenters.Options // options used later to format element
+	options *formatters.Options // options used later to format element
 
 	indentLevel int
 
 	tokens   []lexer.Token
 	endTypes []lexer.TokenType
 
-	result []reindenters.Reindenter
+	result []formatters.Formatter
 }
 
 // NewParser initializes a Parser with a sequence of lexer tokens representing an SQL query.
-func NewParser(tokens []lexer.Token, options *reindenters.Options) (*Parser, error) {
+func NewParser(tokens []lexer.Token, options *formatters.Options) (*Parser, error) {
 
 	// Use default options if none are passed
 	if options == nil {
-		options = reindenters.DefaultOptions()
+		options = formatters.DefaultOptions()
 	}
 
 	// Create initial Parser with according type, tokens and end types
 	firstTokenType := tokens[0].Type
 	switch firstTokenType {
 	case lexer.SELECT:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfSelect}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfSelect}, nil
 	case lexer.FROM:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfFrom}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfFrom}, nil
 	case lexer.CASE:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfCase}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfCase}, nil
 	case lexer.JOIN, lexer.INNER, lexer.OUTER, lexer.LEFT, lexer.RIGHT, lexer.NATURAL, lexer.CROSS:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfJoin}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfJoin}, nil
 	case lexer.WHERE:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfWhere}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfWhere}, nil
 	case lexer.ANDGROUP:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfAndGroup}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfAndGroup}, nil
 	case lexer.ORGROUP:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfOrGroup}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfOrGroup}, nil
 	case lexer.AND:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfAndGroup}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfAndGroup}, nil
 	case lexer.OR:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfOrGroup}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfOrGroup}, nil
 	case lexer.GROUP:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfGroupBy}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfGroupBy}, nil
 	case lexer.HAVING:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfHaving}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfHaving}, nil
 	case lexer.ORDER:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfOrderBy}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfOrderBy}, nil
 	case lexer.LIMIT, lexer.FETCH, lexer.OFFSET:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfLimitClause}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfLimitClause}, nil
 	case lexer.STARTPARENTHESIS:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfParenthesis}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfParenthesis}, nil
 	case lexer.UNION, lexer.INTERSECT, lexer.EXCEPT:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfTieClause}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfTieClause}, nil
 	case lexer.UPDATE:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfUpdate}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfUpdate}, nil
 	case lexer.SET:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfSet}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfSet}, nil
 	case lexer.RETURNING:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfReturning}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfReturning}, nil
 	case lexer.DELETE:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfDelete}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfDelete}, nil
 	case lexer.INSERT:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfInsert}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfInsert}, nil
 	case lexer.VALUES:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfValues}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfValues}, nil
 	case lexer.FUNCTIONKEYWORD:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfFunctionKeyword}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfFunctionKeyword}, nil
 	case lexer.FUNCTION:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfFunction}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfFunction}, nil
 	case lexer.TYPE:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfTypeCast}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfTypeCast}, nil
 	case lexer.LOCK:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfLock}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfLock}, nil
 	case lexer.WITH:
-		return &Parser{options: options, tokens: tokens, endTypes: reindenters.EndOfWith}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfWith}, nil
 	default:
 		return nil, fmt.Errorf("invalid start token '%s'", tokens[0].Value)
 	}
@@ -119,7 +119,7 @@ func NewParser(tokens []lexer.Token, options *reindenters.Options) (*Parser, err
 // Parse wraps parseSegment() and loops until EOF is reached. The initial sequence of tokens is usually
 // comprised out of multiple segments (SELECT, FROM, WHERE,...). Parse() loops until EOF to make sure all
 // segments are processed.
-func (r *Parser) Parse() ([]reindenters.Reindenter, error) {
+func (r *Parser) Parse() ([]formatters.Formatter, error) {
 
 	// Prepare process variable
 	var offset int
@@ -151,10 +151,10 @@ func (r *Parser) Parse() ([]reindenters.Reindenter, error) {
 		}
 
 		// Retrieve segment result
-		segmentReindenter := segmentParser.buildReindenter()
+		segmentFormatter := segmentParser.buildFormatter()
 
 		// Append segment result to total result
-		r.result = append(r.result, segmentReindenter)
+		r.result = append(r.result, segmentFormatter)
 
 		// Increment offset counter to proceed with next segment, if available
 		offset += idxEndSegment
@@ -164,10 +164,10 @@ func (r *Parser) Parse() ([]reindenters.Reindenter, error) {
 	return r.result, nil
 }
 
-// parseSegment iterates a token segment, creates according Reindenters and appends them to the final result.
+// parseSegment iterates a token segment, creates according Formatters and appends them to the final result.
 // It iterates until a suitable end token type (depending on the segment's initial token type) could be found.
 // Whenever an intermediate subsequence (certain token type) is detected, a new Parser is initialized
-// (recursively) processing that subsequence and appending it as a Reindenter group. The same way subsequences
+// (recursively) processing that subsequence and appending it as a Formatter group. The same way subsequences
 // can be nested arbitrarily, Parsers will be nested equally. A Parser may fork a Parser for a
 // subsequence, and so on. The nested Parser results are aggregated by their parent Parser as they are yielded.
 func (r *Parser) parseSegment() (int, error) {
@@ -222,13 +222,13 @@ func (r *Parser) parseSegment() (int, error) {
 				}
 
 				// Append subsegment result to parent segment result
-				segmentReindenter := segmentParser.buildReindenter()
-				if segmentReindenter == nil {
+				segmentFormatter := segmentParser.buildFormatter()
+				if segmentFormatter == nil {
 					return 0, fmt.Errorf("invalid segment result: %#v", segmentParser.result)
 				}
 
 				// Append subsegment result to parent segment result
-				r.result = append(r.result, segmentReindenter)
+				r.result = append(r.result, segmentFormatter)
 
 				// Skip tokens that were processed as a subsegment parser
 				switch tokenCurrent.Type {
@@ -244,7 +244,7 @@ func (r *Parser) parseSegment() (int, error) {
 		}
 
 		// Append token to result
-		r.result = append(r.result, reindenters.Token{
+		r.result = append(r.result, formatters.Token{
 			Options: r.options,
 			Token: lexer.Token{
 				Type:  tokenCurrent.Type,
@@ -282,7 +282,7 @@ func (r *Parser) isEndToken(idx int) bool {
 	tokenCurrent := r.tokens[idx]
 
 	// Ignore usual token end type if within join clause
-	for _, ttype := range reindenters.TokenTypesOfJoinMaker {
+	for _, ttype := range lexer.TokenTypesOfJoinMaker {
 		if tokenFirst.Type == ttype && idx < joinStartRange {
 			return false
 		}
@@ -347,14 +347,14 @@ func (r *Parser) isNewSegment(idx int) (bool, int) {
 	// Check if token is indicating join clause.
 	// However, ignore keyword if it appears in start of join group such as LEFT INNER JOIN.
 	// In this case, "INNER" and "JOIN" are group keyword, but should not make subGroup
-	for _, ttype := range reindenters.TokenTypesOfJoinMaker {
+	for _, ttype := range lexer.TokenTypesOfJoinMaker {
 		if tokenCurrent.Type == ttype && idx >= joinStartRange {
 			return true, r.indentLevel
 		}
 	}
 
 	// Check if token is of any type commonly indicating subsegment
-	for _, v := range reindenters.TokenTypesOfGroupMaker {
+	for _, v := range lexer.TokenTypesOfGroupMaker {
 		if tokenCurrent.Type == v {
 			return true, r.indentLevel
 		}
@@ -364,97 +364,97 @@ func (r *Parser) isNewSegment(idx int) (bool, int) {
 	return false, 0
 }
 
-// buildReindenter creates a Reindenter for the intermediate Parser subsegment, representing a
+// buildFormatter creates a Formatter for the intermediate Parser subsegment, representing a
 // segment of the SQL query, which can then be appended to the result sequence
-func (r *Parser) buildReindenter() reindenters.Reindenter {
+func (r *Parser) buildFormatter() formatters.Formatter {
 
 	// Get variables to work with
 	elements := r.result
-	firstElement, _ := elements[0].(reindenters.Token)
+	firstElement, _ := elements[0].(formatters.Token)
 	identLevel := r.indentLevel
 
 	// Build suitable Reintender group and return it
 	switch firstElement.Type {
 	case lexer.SELECT:
-		return &reindenters.Select{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Select{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.FROM:
-		return &reindenters.From{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.From{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.JOIN, lexer.INNER, lexer.OUTER, lexer.LEFT, lexer.RIGHT, lexer.NATURAL, lexer.CROSS:
-		return &reindenters.Join{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Join{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.WHERE:
-		return &reindenters.Where{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Where{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.ANDGROUP:
-		return &reindenters.AndGroup{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.AndGroup{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.ORGROUP:
-		return &reindenters.OrGroup{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.OrGroup{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.AND:
-		return &reindenters.AndGroup{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.AndGroup{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.OR:
-		return &reindenters.OrGroup{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.OrGroup{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.GROUP:
-		return &reindenters.GroupBy{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.GroupBy{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.ORDER:
-		return &reindenters.OrderBy{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.OrderBy{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.HAVING:
-		return &reindenters.Having{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Having{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.LIMIT, lexer.OFFSET, lexer.FETCH:
-		return &reindenters.Limit{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Limit{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.UNION, lexer.INTERSECT, lexer.EXCEPT:
-		return &reindenters.TieGroup{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.TieGroup{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.UPDATE:
-		return &reindenters.Update{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Update{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.SET:
-		return &reindenters.Set{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Set{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.RETURNING:
-		return &reindenters.Returning{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Returning{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.LOCK:
-		return &reindenters.Lock{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Lock{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.INSERT:
-		return &reindenters.Insert{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Insert{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.VALUES:
-		return &reindenters.Values{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Values{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.DELETE:
-		return &reindenters.Delete{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Delete{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.WITH:
-		return &reindenters.With{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.With{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	case lexer.CASE:
 
 		// End token of CASE group("END") has to be added to the group
-		endToken := reindenters.Token{Options: r.options, Token: lexer.Token{Type: lexer.END, Value: "END"}}
+		endToken := formatters.Token{Options: r.options, Token: lexer.Token{Type: lexer.END, Value: "END"}}
 		elements = append(elements, endToken)
-		return &reindenters.Case{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Case{Options: r.options, Elements: elements, IndentLevel: identLevel}
 
 	case lexer.STARTPARENTHESIS:
 
 		// End token of sub query group (")") has to be added in the group
-		endToken := reindenters.Token{Options: r.options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}}
+		endToken := formatters.Token{Options: r.options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}}
 		elements = append(elements, endToken)
 
 		// Create subquery indenter if first keyword is SELECT or related keyword. Subqueries are not a
 		// lot different to parenthesis groups, but this gives us additional information and format control
 		switch elements[1].(type) {
-		case *reindenters.Select:
-			return &reindenters.Subquery{Options: r.options, Element: elements, IndentLevel: identLevel}
-		case *reindenters.With:
-			return &reindenters.Subquery{Options: r.options, Element: elements, IndentLevel: identLevel}
+		case *formatters.Select:
+			return &formatters.Subquery{Options: r.options, Elements: elements, IndentLevel: identLevel}
+		case *formatters.With:
+			return &formatters.Subquery{Options: r.options, Elements: elements, IndentLevel: identLevel}
 		}
 
 		// Return normal parenthesis group otherwise
-		return &reindenters.Parenthesis{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Parenthesis{Options: r.options, Elements: elements, IndentLevel: identLevel}
 
 	case lexer.FUNCTION:
 
 		// End token of function group (")") has to be added in the group
-		endToken := reindenters.Token{Options: r.options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}}
+		endToken := formatters.Token{Options: r.options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}}
 		elements = append(elements, endToken)
-		return &reindenters.Function{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.Function{Options: r.options, Elements: elements, IndentLevel: identLevel}
 
 	case lexer.TYPE:
 
 		// End token of TYPE group (")") has to be added in the group
-		endToken := reindenters.Token{Options: r.options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}}
+		endToken := formatters.Token{Options: r.options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}}
 		elements = append(elements, endToken)
-		return &reindenters.TypeCast{Options: r.options, Element: elements, IndentLevel: identLevel}
+		return &formatters.TypeCast{Options: r.options, Elements: elements, IndentLevel: identLevel}
 	}
 
 	// Return nil as no group could be built

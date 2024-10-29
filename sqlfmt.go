@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/noneymous/go-sqlfmt/sqlfmt"
-	"github.com/noneymous/go-sqlfmt/sqlfmt/reindenters"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/formatters"
 	"io"
 	"log"
 	"os"
@@ -20,7 +20,7 @@ var (
 	list    = flag.Bool("l", false, "list files whose formatting differs from goreturns's")
 	write   = flag.Bool("w", false, "write result to (source) file instead of stdout")
 	doDiff  = flag.Bool("d", false, "display diffs instead of rewriting files")
-	options = &reindenters.Options{
+	options = &formatters.Options{
 		Padding:    "",
 		Indent:     "  ",
 		Newline:    "\n",

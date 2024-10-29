@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/noneymous/go-sqlfmt/sqlfmt/reindenters"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/formatters"
 	"reflect"
 	"testing"
 
@@ -9,12 +9,12 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	options := reindenters.DefaultOptions()
+	options := formatters.DefaultOptions()
 
 	tests := []struct {
 		name        string
 		tokenSource []lexer.Token
-		want        []reindenters.Reindenter
+		want        []formatters.Formatter
 	}{
 		{
 			name: "normal test case 1",
@@ -47,57 +47,57 @@ func TestParse(t *testing.T) {
 				{Type: lexer.STRING, Value: "'xxx'"},
 				{Type: lexer.EOF, Value: "EOF"},
 			},
-			want: []reindenters.Reindenter{
-				&reindenters.Select{
+			want: []formatters.Formatter{
+				&formatters.Select{
 					Options: options,
-					Element: []reindenters.Reindenter{
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.SELECT, Value: "SELECT"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "name"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.COMMA, Value: ","}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "age"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.COMMA, Value: ","}},
-						&reindenters.Function{
+					Elements: []formatters.Formatter{
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.SELECT, Value: "SELECT"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "name"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.COMMA, Value: ","}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "age"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.COMMA, Value: ","}},
+						&formatters.Function{
 							Options: options,
-							Element: []reindenters.Reindenter{
-								reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.FUNCTION, Value: "SUM"}},
-								reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.STARTPARENTHESIS, Value: "("}},
-								reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
-								reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}},
+							Elements: []formatters.Formatter{
+								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.FUNCTION, Value: "SUM"}},
+								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.STARTPARENTHESIS, Value: "("}},
+								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}},
 							},
 						},
-						&reindenters.Parenthesis{
+						&formatters.Parenthesis{
 							Options: options,
-							Element: []reindenters.Reindenter{
-								reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.STARTPARENTHESIS, Value: "("}},
-								reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
-								reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}},
+							Elements: []formatters.Formatter{
+								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.STARTPARENTHESIS, Value: "("}},
+								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}},
 							},
 						},
-						&reindenters.TypeCast{
+						&formatters.TypeCast{
 							Options: options,
-							Element: []reindenters.Reindenter{
-								reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.TYPE, Value: "TEXT"}},
-								reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.STARTPARENTHESIS, Value: "("}},
-								reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
-								reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}},
+							Elements: []formatters.Formatter{
+								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.TYPE, Value: "TEXT"}},
+								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.STARTPARENTHESIS, Value: "("}},
+								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}},
 							},
 						},
 					},
 				},
-				&reindenters.From{
+				&formatters.From{
 					Options: options,
-					Element: []reindenters.Reindenter{
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.FROM, Value: "FROM"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "user"}},
+					Elements: []formatters.Formatter{
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.FROM, Value: "FROM"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "user"}},
 					},
 				},
-				&reindenters.Where{
+				&formatters.Where{
 					Options: options,
-					Element: []reindenters.Reindenter{
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.WHERE, Value: "WHERE"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "name"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "="}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.STRING, Value: "'xxx'"}},
+					Elements: []formatters.Formatter{
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.WHERE, Value: "WHERE"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "name"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "="}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.STRING, Value: "'xxx'"}},
 					},
 				},
 			},
@@ -140,107 +140,107 @@ func TestParse(t *testing.T) {
 				{Type: lexer.IDENT, Value: "xxx"},
 				{Type: lexer.EOF, Value: "EOF"},
 			},
-			want: []reindenters.Reindenter{
-				&reindenters.Select{
+			want: []formatters.Formatter{
+				&formatters.Select{
 					Options: options,
-					Element: []reindenters.Reindenter{
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.SELECT, Value: "SELECT"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+					Elements: []formatters.Formatter{
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.SELECT, Value: "SELECT"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
 					},
 				},
-				&reindenters.From{
+				&formatters.From{
 					Options: options,
-					Element: []reindenters.Reindenter{
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.FROM, Value: "FROM"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+					Elements: []formatters.Formatter{
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.FROM, Value: "FROM"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
 					},
 				},
-				&reindenters.Where{
+				&formatters.Where{
 					Options: options,
-					Element: []reindenters.Reindenter{
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.WHERE, Value: "WHERE"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IN, Value: "IN"}},
-						&reindenters.Subquery{
+					Elements: []formatters.Formatter{
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.WHERE, Value: "WHERE"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IN, Value: "IN"}},
+						&formatters.Subquery{
 							Options: options,
-							Element: []reindenters.Reindenter{
-								reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.STARTPARENTHESIS, Value: "("}},
-								&reindenters.Select{
+							Elements: []formatters.Formatter{
+								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.STARTPARENTHESIS, Value: "("}},
+								&formatters.Select{
 									Options: options,
-									Element: []reindenters.Reindenter{
-										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.SELECT, Value: "SELECT"}},
-										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+									Elements: []formatters.Formatter{
+										formatters.Token{Options: options, Token: lexer.Token{Type: lexer.SELECT, Value: "SELECT"}},
+										formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
 									},
 									IndentLevel: 0,
 								},
-								&reindenters.From{
+								&formatters.From{
 									Options: options,
-									Element: []reindenters.Reindenter{
-										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.FROM, Value: "FROM"}},
-										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+									Elements: []formatters.Formatter{
+										formatters.Token{Options: options, Token: lexer.Token{Type: lexer.FROM, Value: "FROM"}},
+										formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
 									},
 									IndentLevel: 0,
 								},
-								&reindenters.Join{
+								&formatters.Join{
 									Options: options,
-									Element: []reindenters.Reindenter{
-										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.JOIN, Value: "JOIN"}},
-										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
-										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.ON, Value: "ON"}},
-										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
-										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "="}},
-										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+									Elements: []formatters.Formatter{
+										formatters.Token{Options: options, Token: lexer.Token{Type: lexer.JOIN, Value: "JOIN"}},
+										formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+										formatters.Token{Options: options, Token: lexer.Token{Type: lexer.ON, Value: "ON"}},
+										formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+										formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "="}},
+										formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
 									},
 									IndentLevel: 0,
 								},
-								reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}},
+								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}},
 							},
 							IndentLevel: 0,
 						},
 					},
 				},
-				&reindenters.GroupBy{
+				&formatters.GroupBy{
 					Options: options,
-					Element: []reindenters.Reindenter{
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.GROUP, Value: "GROUP"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.BY, Value: "BY"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+					Elements: []formatters.Formatter{
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.GROUP, Value: "GROUP"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.BY, Value: "BY"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
 					},
 				},
-				&reindenters.OrderBy{
+				&formatters.OrderBy{
 					Options: options,
-					Element: []reindenters.Reindenter{
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.ORDER, Value: "ORDER"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.BY, Value: "BY"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+					Elements: []formatters.Formatter{
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.ORDER, Value: "ORDER"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.BY, Value: "BY"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
 					},
 				},
-				&reindenters.Limit{
+				&formatters.Limit{
 					Options: options,
-					Element: []reindenters.Reindenter{
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.LIMIT, Value: "LIMIT"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+					Elements: []formatters.Formatter{
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.LIMIT, Value: "LIMIT"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
 					},
 				},
-				&reindenters.TieGroup{
+				&formatters.TieGroup{
 					Options: options,
-					Element: []reindenters.Reindenter{
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.UNION, Value: "UNION"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.ALL, Value: "ALL"}},
+					Elements: []formatters.Formatter{
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.UNION, Value: "UNION"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.ALL, Value: "ALL"}},
 					},
 				},
-				&reindenters.Select{
+				&formatters.Select{
 					Options: options,
-					Element: []reindenters.Reindenter{
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.SELECT, Value: "SELECT"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+					Elements: []formatters.Formatter{
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.SELECT, Value: "SELECT"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
 					},
 				},
-				&reindenters.From{
+				&formatters.From{
 					Options: options,
-					Element: []reindenters.Reindenter{
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.FROM, Value: "FROM"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
+					Elements: []formatters.Formatter{
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.FROM, Value: "FROM"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
 					},
 				},
 			},
@@ -256,21 +256,21 @@ func TestParse(t *testing.T) {
 				{Type: lexer.IDENT, Value: "0"},
 				{Type: lexer.EOF, Value: "EOF"},
 			},
-			want: []reindenters.Reindenter{
-				&reindenters.Update{
+			want: []formatters.Formatter{
+				&formatters.Update{
 					Options: options,
-					Element: []reindenters.Reindenter{
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.UPDATE, Value: "UPDATE"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "user"}},
+					Elements: []formatters.Formatter{
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.UPDATE, Value: "UPDATE"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "user"}},
 					},
 				},
-				&reindenters.Set{
+				&formatters.Set{
 					Options: options,
-					Element: []reindenters.Reindenter{
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.SET, Value: "SET"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "point"}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "="}},
-						reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "0"}},
+					Elements: []formatters.Formatter{
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.SET, Value: "SET"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "point"}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "="}},
+						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "0"}},
 					},
 				},
 			},
@@ -290,7 +290,7 @@ func TestParse(t *testing.T) {
 }
 
 func TestNewParser(t *testing.T) {
-	options := reindenters.DefaultOptions()
+	options := formatters.DefaultOptions()
 	testingData := []lexer.Token{
 		{Type: lexer.SELECT, Value: "SELECT"},
 		{Type: lexer.IDENT, Value: "name"},
@@ -407,7 +407,7 @@ func Test_parseSegment(t *testing.T) {
 			// Convert token sequence to string sequence
 			var gotStmt []string
 			for _, v := range r.result {
-				if tok, ok := v.(reindenters.Token); ok {
+				if tok, ok := v.(formatters.Token); ok {
 					gotStmt = append(gotStmt, tok.Value)
 				}
 			}
