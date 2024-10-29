@@ -336,6 +336,60 @@ WHERE attrelid = 33176310:: oid AND attnum = ANY (
 )`,
 		},
 
+		{
+			name: "CASE WHEN ELSE with complex case",
+			sql:  `SELECT roles.rolsuper AS is_superuser, CASE WHEN roles.rolsuper THEN true WHEN roles.roladmin THEN true ELSE roles.rolcreaterole END AS can_create_role, CASE WHEN 'pg_signal_backend' = ANY ( array ( with recursive cte AS ( SELECT pg_roles.oid, pg_roles.rolname FROM pg_roles WHERE pg_roles.oid = roles.oid UNION ALL SELECT m.roleid, pgr.rolname FROM cte cte_1 JOIN pg_auth_members m ON m.member = cte_1.oid JOIN pg_roles pgr ON pgr.oid = m.roleid ) SELECT rolname FROM cte ) ) THEN true ELSE false END AS can_signal_backend FROM pg_catalog.pg_roles AS roles WHERE rolname = CURRENT_USER`,
+			want: `SELECT
+  roles.rolsuper AS is_superuser,
+  CASE
+    WHEN roles.rolsuper THEN true
+    WHEN roles.roladmin THEN true
+    ELSE roles.rolcreaterole
+  END AS can_create_role,
+  CASE
+    WHEN 'pg_signal_backend' = ANY (
+      ARRAY (
+        WITH recursive cte AS (
+          SELECT
+            pg_roles.oid,
+            pg_roles.rolname
+          FROM pg_roles
+          WHERE pg_roles.oid = roles.oid
+          UNION ALL
+          SELECT
+            m.roleid,
+            pgr.rolname
+          FROM cte cte_1
+          JOIN pg_auth_members m ON m.member = cte_1.oid
+          JOIN pg_roles pgr ON pgr.oid = m.roleid
+        )
+        SELECT
+          rolname
+        FROM cte
+      )
+    ) THEN true
+    ELSE false
+  END AS can_signal_backend
+FROM pg_catalog.pg_roles AS roles
+WHERE rolname = CURRENT_USER`,
+		},
+		{
+			name: "ANY and ARRAY",
+			sql: `SELECT *
+			FROM tble
+			WHERE 'value' = ANY (ARRAY (SELECT col FROM tble2))`,
+			want: `SELECT
+  *
+FROM tble
+WHERE 'value' = ANY (
+  ARRAY (
+    SELECT
+      col
+    FROM tble2
+  )
+)`,
+		},
+
 		/*
 		 * Unconventional queries
 		 */
@@ -489,6 +543,14 @@ FROM table`,
 			name: "nested functions",
 			sql:  `SELECT sum(avg(xxx)) FROM table`,
 			want: `SELECT
+  SUM( AVG(xxx))
+FROM table`,
+		},
+		{
+			name: "nested functions 2",
+			sql:  `SELECT test, sum(avg(xxx)) FROM table`,
+			want: `SELECT
+  test,
   SUM( AVG(xxx))
 FROM table`,
 		},

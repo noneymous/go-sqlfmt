@@ -42,9 +42,15 @@ func TestReindentSelectGroup(t *testing.T) {
 	}
 }
 
-func TestIncrementIndentLevel(t *testing.T) {
-	s := &Select{}
-	s.IncrementIndentLevel(1)
+func TestIncrementIndent(t *testing.T) {
+	options := DefaultOptions()
+	s := &Select{
+		Options:     options,
+		Element:     nil,
+		IndentLevel: 0,
+		ColumnCount: 0,
+	}
+	s.IncrementIndent(1)
 	got := s.IndentLevel
 	want := 1
 	if got != want {

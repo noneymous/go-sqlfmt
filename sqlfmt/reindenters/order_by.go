@@ -19,9 +19,6 @@ func (group *OrderBy) Reindent(buf *bytes.Buffer, parent []Reindenter, parentIdx
 	var NEWLINE = group.Options.Newline
 	var WHITESPACE = group.Options.Whitespace
 
-	// Reset column count
-	columnCount = 0
-
 	// Preprocess punctuation and enrich with surrounding information
 	elements, err := processPunctuation(group.Element, WHITESPACE)
 	if err != nil {
@@ -29,10 +26,11 @@ func (group *OrderBy) Reindent(buf *bytes.Buffer, parent []Reindenter, parentIdx
 	}
 
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
+	columnCount := 0
 	for i, el := range separate(elements, WHITESPACE) {
 		switch v := el.(type) {
 		case Token, string:
-			if errWrite := writeWithComma(buf, INDENT, NEWLINE, WHITESPACE, v, group.IndentLevel); errWrite != nil {
+			if errWrite := writeWithComma(buf, INDENT, NEWLINE, WHITESPACE, v, group.IndentLevel, &columnCount); errWrite != nil {
 				return errWrite
 			}
 		case Reindenter:
@@ -44,12 +42,18 @@ func (group *OrderBy) Reindent(buf *bytes.Buffer, parent []Reindenter, parentIdx
 	return nil
 }
 
-// IncrementIndentLevel increments by its specified indent level
-func (group *OrderBy) IncrementIndentLevel(lev int) {
+// IncrementIndent increments by its specified indent level
+func (group *OrderBy) IncrementIndent(lev int) {
 	group.IndentLevel += lev
 
+	// Preprocess punctuation and enrich with surrounding information
+	elements, err := processPunctuation(group.Element, group.Options.Whitespace)
+	if err != nil {
+		elements = group.Element
+	}
+
 	// Iterate and increase indent of child elements too
-	for _, el := range group.Element {
-		el.IncrementIndentLevel(lev)
+	for _, el := range elements {
+		el.IncrementIndent(lev)
 	}
 }

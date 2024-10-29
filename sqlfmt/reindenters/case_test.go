@@ -24,7 +24,7 @@ func TestReindentCaseGroup(t *testing.T) {
 				Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "something"}},
 				Token{Options: options, Token: lexer.Token{Type: lexer.END, Value: "END"}},
 			},
-			want: "\n  CASE\n     WHEN something something\n  END",
+			want: "\n  CASE\n    WHEN something something\n  END",
 		},
 	}
 	for _, tt := range tests {

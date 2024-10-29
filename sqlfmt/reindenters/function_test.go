@@ -3,6 +3,7 @@ package reindenters
 import (
 	"bytes"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"testing"
 
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
@@ -33,11 +34,16 @@ func TestReindentFunctionGroup(t *testing.T) {
 
 			_ = el.Reindent(buf, nil, 0)
 			got := buf.String()
+
+			spew.Dump(got)
+			spew.Dump(tt.want)
+
 			if tt.want != got {
 				t.Errorf("\n=======================\n=== WANT =============>\n%s\n=======================\n=== GOT ==============>\n%s\n=======================", tt.want, got)
 			} else {
 				fmt.Println(fmt.Sprintf("%s\n%s", got, "========================================================================"))
 			}
+
 		})
 	}
 }

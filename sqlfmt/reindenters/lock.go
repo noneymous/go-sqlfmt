@@ -30,13 +30,19 @@ func (group *Lock) Reindent(buf *bytes.Buffer, parent []Reindenter, parentIdx in
 	return nil
 }
 
-// IncrementIndentLevel increments by its specified increment level
-func (group *Lock) IncrementIndentLevel(lev int) {
+// IncrementIndent increments by its specified increment level
+func (group *Lock) IncrementIndent(lev int) {
 	group.IndentLevel += lev
 
+	// Preprocess punctuation and enrich with surrounding information
+	elements, err := processPunctuation(group.Element, group.Options.Whitespace)
+	if err != nil {
+		elements = group.Element
+	}
+
 	// Iterate and increase indent of child elements too
-	for _, el := range group.Element {
-		el.IncrementIndentLevel(lev)
+	for _, el := range elements {
+		el.IncrementIndent(lev)
 	}
 }
 

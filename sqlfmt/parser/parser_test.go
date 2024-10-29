@@ -10,80 +10,6 @@ import (
 
 func TestParse(t *testing.T) {
 	options := reindenters.DefaultOptions()
-	testingData := []lexer.Token{
-		{Type: lexer.SELECT, Value: "SELECT"},
-		{Type: lexer.IDENT, Value: "name"},
-		{Type: lexer.COMMA, Value: ","},
-		{Type: lexer.IDENT, Value: "age"},
-		{Type: lexer.COMMA, Value: ","},
-
-		{Type: lexer.FUNCTION, Value: "SUM"},
-		{Type: lexer.STARTPARENTHESIS, Value: "("},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.ENDPARENTHESIS, Value: ")"},
-
-		{Type: lexer.STARTPARENTHESIS, Value: "("},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.ENDPARENTHESIS, Value: ")"},
-
-		{Type: lexer.TYPE, Value: "TEXT"},
-		{Type: lexer.STARTPARENTHESIS, Value: "("},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.ENDPARENTHESIS, Value: ")"},
-
-		{Type: lexer.FROM, Value: "FROM"},
-		{Type: lexer.IDENT, Value: "user"},
-		{Type: lexer.WHERE, Value: "WHERE"},
-		{Type: lexer.IDENT, Value: "name"},
-		{Type: lexer.IDENT, Value: "="},
-		{Type: lexer.STRING, Value: "'xxx'"},
-		{Type: lexer.EOF, Value: "EOF"},
-	}
-	testingData2 := []lexer.Token{
-		{Type: lexer.SELECT, Value: "SELECT"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.FROM, Value: "FROM"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.WHERE, Value: "WHERE"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.IN, Value: "IN"},
-		{Type: lexer.STARTPARENTHESIS, Value: "("},
-		{Type: lexer.SELECT, Value: "SELECT"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.FROM, Value: "FROM"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.JOIN, Value: "JOIN"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.ON, Value: "ON"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.IDENT, Value: "="},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.ENDPARENTHESIS, Value: ")"},
-		{Type: lexer.GROUP, Value: "GROUP"},
-		{Type: lexer.BY, Value: "BY"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.ORDER, Value: "ORDER"},
-		{Type: lexer.BY, Value: "BY"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.LIMIT, Value: "LIMIT"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.UNION, Value: "UNION"},
-		{Type: lexer.ALL, Value: "ALL"},
-		{Type: lexer.SELECT, Value: "SELECT"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.FROM, Value: "FROM"},
-		{Type: lexer.IDENT, Value: "xxx"},
-		{Type: lexer.EOF, Value: "EOF"},
-	}
-	testingData3 := []lexer.Token{
-		{Type: lexer.UPDATE, Value: "UPDATE"},
-		{Type: lexer.IDENT, Value: "user"},
-		{Type: lexer.SET, Value: "SET"},
-		{Type: lexer.IDENT, Value: "point"},
-		{Type: lexer.IDENT, Value: "="},
-		{Type: lexer.IDENT, Value: "0"},
-		{Type: lexer.EOF, Value: "EOF"},
-	}
 
 	tests := []struct {
 		name        string
@@ -91,8 +17,36 @@ func TestParse(t *testing.T) {
 		want        []reindenters.Reindenter
 	}{
 		{
-			name:        "normal test case 1",
-			tokenSource: testingData,
+			name: "normal test case 1",
+			tokenSource: []lexer.Token{
+				{Type: lexer.SELECT, Value: "SELECT"},
+				{Type: lexer.IDENT, Value: "name"},
+				{Type: lexer.COMMA, Value: ","},
+				{Type: lexer.IDENT, Value: "age"},
+				{Type: lexer.COMMA, Value: ","},
+
+				{Type: lexer.FUNCTION, Value: "SUM"},
+				{Type: lexer.STARTPARENTHESIS, Value: "("},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.ENDPARENTHESIS, Value: ")"},
+
+				{Type: lexer.STARTPARENTHESIS, Value: "("},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.ENDPARENTHESIS, Value: ")"},
+
+				{Type: lexer.TYPE, Value: "TEXT"},
+				{Type: lexer.STARTPARENTHESIS, Value: "("},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.ENDPARENTHESIS, Value: ")"},
+
+				{Type: lexer.FROM, Value: "FROM"},
+				{Type: lexer.IDENT, Value: "user"},
+				{Type: lexer.WHERE, Value: "WHERE"},
+				{Type: lexer.IDENT, Value: "name"},
+				{Type: lexer.IDENT, Value: "="},
+				{Type: lexer.STRING, Value: "'xxx'"},
+				{Type: lexer.EOF, Value: "EOF"},
+			},
 			want: []reindenters.Reindenter{
 				&reindenters.Select{
 					Options: options,
@@ -149,8 +103,43 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name:        "normal test case 2",
-			tokenSource: testingData2,
+			name: "normal test case 2",
+			tokenSource: []lexer.Token{
+				{Type: lexer.SELECT, Value: "SELECT"},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.FROM, Value: "FROM"},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.WHERE, Value: "WHERE"},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.IN, Value: "IN"},
+				{Type: lexer.STARTPARENTHESIS, Value: "("},
+				{Type: lexer.SELECT, Value: "SELECT"},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.FROM, Value: "FROM"},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.JOIN, Value: "JOIN"},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.ON, Value: "ON"},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.IDENT, Value: "="},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.ENDPARENTHESIS, Value: ")"},
+				{Type: lexer.GROUP, Value: "GROUP"},
+				{Type: lexer.BY, Value: "BY"},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.ORDER, Value: "ORDER"},
+				{Type: lexer.BY, Value: "BY"},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.LIMIT, Value: "LIMIT"},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.UNION, Value: "UNION"},
+				{Type: lexer.ALL, Value: "ALL"},
+				{Type: lexer.SELECT, Value: "SELECT"},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.FROM, Value: "FROM"},
+				{Type: lexer.IDENT, Value: "xxx"},
+				{Type: lexer.EOF, Value: "EOF"},
+			},
 			want: []reindenters.Reindenter{
 				&reindenters.Select{
 					Options: options,
@@ -182,7 +171,7 @@ func TestParse(t *testing.T) {
 										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.SELECT, Value: "SELECT"}},
 										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
 									},
-									IndentLevel: 1,
+									IndentLevel: 0,
 								},
 								&reindenters.From{
 									Options: options,
@@ -190,7 +179,7 @@ func TestParse(t *testing.T) {
 										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.FROM, Value: "FROM"}},
 										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
 									},
-									IndentLevel: 1,
+									IndentLevel: 0,
 								},
 								&reindenters.Join{
 									Options: options,
@@ -202,11 +191,11 @@ func TestParse(t *testing.T) {
 										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "="}},
 										reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxx"}},
 									},
-									IndentLevel: 1,
+									IndentLevel: 0,
 								},
 								reindenters.Token{Options: options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}},
 							},
-							IndentLevel: 1,
+							IndentLevel: 0,
 						},
 					},
 				},
@@ -257,8 +246,16 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name:        "normal test case 3",
-			tokenSource: testingData3,
+			name: "normal test case 3",
+			tokenSource: []lexer.Token{
+				{Type: lexer.UPDATE, Value: "UPDATE"},
+				{Type: lexer.IDENT, Value: "user"},
+				{Type: lexer.SET, Value: "SET"},
+				{Type: lexer.IDENT, Value: "point"},
+				{Type: lexer.IDENT, Value: "="},
+				{Type: lexer.IDENT, Value: "0"},
+				{Type: lexer.EOF, Value: "EOF"},
+			},
 			want: []reindenters.Reindenter{
 				&reindenters.Update{
 					Options: options,
@@ -280,13 +277,15 @@ func TestParse(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		got, err := Parse(tt.tokenSource, options)
-		if err != nil {
-			t.Errorf("ERROR: %#v", err)
-		}
-		if !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Parse(tt.tokenSource, options)
+			if err != nil {
+				t.Errorf("ERROR: %#v", err)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("\nwant %#v, \ngot  %#v", tt.want, got)
+			}
+		})
 	}
 }
 

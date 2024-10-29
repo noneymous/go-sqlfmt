@@ -9,9 +9,6 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-// count of ident appearing in column area
-var columnCount int
-
 // Options to define output format of Reindenters
 type Options struct {
 	Padding    string // Character sequence added as left padding on all lines, e.g. "" (none)
@@ -33,7 +30,7 @@ func DefaultOptions() *Options {
 // Reindenter interface. Example values of Reindenter would be clause group or token
 type Reindenter interface {
 	Reindent(buf *bytes.Buffer, parent []Reindenter, parentIdx int) error
-	IncrementIndentLevel(lev int)
+	IncrementIndent(lev int)
 }
 
 // Token wrapping lexer Token but extended with Options struct
@@ -47,8 +44,8 @@ func (t Token) Reindent(buf *bytes.Buffer, parent []Reindenter, parentIdx int) e
 	return nil
 }
 
-// IncrementIndentLevel is a placeholder implementing Reindenter interface
-func (t Token) IncrementIndentLevel(lev int) {
+// IncrementIndent is a placeholder implementing Reindenter interface
+func (t Token) IncrementIndent(lev int) {
 
 }
 
@@ -75,14 +72,14 @@ var (
 	EndOfValues          = []lexer.TokenType{lexer.UPDATE, lexer.RETURNING, lexer.EOF}
 	EndOfTypeCast        = []lexer.TokenType{lexer.ENDPARENTHESIS, lexer.EOF}
 	EndOfLock            = []lexer.TokenType{lexer.EOF}
-	EndOfWith            = []lexer.TokenType{lexer.EOF}
+	EndOfWith            = []lexer.TokenType{lexer.ENDPARENTHESIS, lexer.EOF}
 	EndOfFunction        = []lexer.TokenType{lexer.ENDPARENTHESIS, lexer.EOF}
 	EndOfFunctionKeyword []lexer.TokenType // No end types means everything is an end type
 )
 
 // Define keywords indicating certain segment groups
 var (
-	TokenTypesOfGroupMaker = []lexer.TokenType{lexer.SELECT, lexer.CASE, lexer.FROM, lexer.WHERE, lexer.ORDER, lexer.GROUP, lexer.LIMIT, lexer.ANDGROUP, lexer.ORGROUP, lexer.HAVING, lexer.UNION, lexer.EXCEPT, lexer.INTERSECT, lexer.FUNCTION, lexer.STARTPARENTHESIS, lexer.TYPE}
+	TokenTypesOfGroupMaker = []lexer.TokenType{lexer.SELECT, lexer.CASE, lexer.FROM, lexer.WHERE, lexer.ORDER, lexer.GROUP, lexer.LIMIT, lexer.ANDGROUP, lexer.ORGROUP, lexer.HAVING, lexer.UNION, lexer.EXCEPT, lexer.INTERSECT, lexer.FUNCTION, lexer.STARTPARENTHESIS, lexer.TYPE, lexer.WITH}
 	TokenTypesOfJoinMaker  = []lexer.TokenType{lexer.JOIN, lexer.INNER, lexer.OUTER, lexer.LEFT, lexer.RIGHT, lexer.NATURAL, lexer.CROSS}
 	TokenTypeOfTieClause   = []lexer.TokenType{lexer.UNION, lexer.INTERSECT, lexer.EXCEPT}
 	TokenTypeOfLimitClause = []lexer.TokenType{lexer.LIMIT, lexer.FETCH, lexer.OFFSET}
@@ -136,7 +133,7 @@ func (t Token) RequiresNewline() bool {
 
 // ContinueLine should be called on the last parent token to figure out, whether a token should continue in the same line
 func (t Token) ContinueLine() bool {
-	return t.IsComparator() || t.Type == lexer.FROM || t.Type == lexer.WHERE || t.Type == lexer.EXISTS || t.Type == lexer.AS || t.Type == lexer.IN || t.Type == lexer.ON || t.Type == lexer.ANY
+	return t.IsComparator() || t.Type == lexer.FROM || t.Type == lexer.WHERE || t.Type == lexer.EXISTS || t.Type == lexer.AS || t.Type == lexer.IN || t.Type == lexer.ON || t.Type == lexer.ANY || t.Type == lexer.ARRAY
 }
 
 // IsComparator returns true if token is a comparator
@@ -144,7 +141,8 @@ func (t Token) IsComparator() bool {
 	return t.Type == lexer.COMPARATOR
 }
 
-func write(buf *bytes.Buffer, INDENT, NEWLINE, WHITESPACE string, token, previousToken Token, indent int, hasManyClauses bool) {
+func write(
+	buf *bytes.Buffer, INDENT, NEWLINE, WHITESPACE string, token Token, previousToken Token, indent int, hasMany bool) {
 	switch {
 	case token.RequiresNewline():
 		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
@@ -155,9 +153,9 @@ func write(buf *bytes.Buffer, INDENT, NEWLINE, WHITESPACE string, token, previou
 	case strings.HasPrefix(token.Value, "::"):
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	case token.Type == lexer.WITH:
-		buf.WriteString(fmt.Sprintf("%s%s", NEWLINE, token.Value))
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
 	default:
-		if hasManyClauses {
+		if hasMany {
 
 			// Use newlines as separators
 			if previousToken.RequiresNewline() || previousToken.Type == lexer.AND || previousToken.Type == lexer.OR {
@@ -173,7 +171,7 @@ func write(buf *bytes.Buffer, INDENT, NEWLINE, WHITESPACE string, token, previou
 	}
 }
 
-func writeWithComma(buf *bytes.Buffer, INDENT, NEWLINE, WHITESPACE string, v interface{}, indent int) error {
+func writeWithComma(buf *bytes.Buffer, INDENT, NEWLINE, WHITESPACE string, v interface{}, indent int, columnCount *int) error {
 	if token, ok := v.(Token); ok {
 		switch {
 		case token.RequiresNewline():
@@ -187,14 +185,16 @@ func writeWithComma(buf *bytes.Buffer, INDENT, NEWLINE, WHITESPACE string, v int
 		}
 	} else if str, isString := v.(string); isString {
 		str = strings.TrimRight(str, " ")
-		if columnCount == 0 {
+		if *(columnCount) == 0 {
 			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, str))
 		} else if strings.HasPrefix(token.Value, "::") {
 			buf.WriteString(fmt.Sprintf("%s", str))
 		} else {
 			buf.WriteString(fmt.Sprintf("%s", str))
 		}
-		columnCount++
+
+		// Update number at pointer address
+		*columnCount = *(columnCount) + 1
 	}
 	return nil
 }

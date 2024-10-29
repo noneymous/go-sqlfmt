@@ -19,7 +19,6 @@ type Parenthesis struct {
 
 // Reindent reindents its elements
 func (group *Parenthesis) Reindent(buf *bytes.Buffer, parent []Reindenter, parentIdx int) error {
-	var hasStartBefore bool
 
 	// Prepare short variables for better visibility
 	var WHITESPACE = group.Options.Whitespace
@@ -51,9 +50,9 @@ func (group *Parenthesis) Reindent(buf *bytes.Buffer, parent []Reindenter, paren
 
 		// Write element or recursively call it's Reindent function
 		if token, ok := el.(Token); ok {
-			hasStartBefore = i == 1
-			group.writeParenthesis(buf, token, previousParentToken, group.IndentLevel, group.ColumnCount, group.IsColumnArea, hasStartBefore, hasIntermediate)
+			group.writeParenthesis(buf, token, previousParentToken, group.IndentLevel, group.IsColumnArea, group.ColumnCount, i, hasIntermediate)
 		} else {
+			el.IncrementIndent(1)
 			_ = el.Reindent(buf, elements, i)
 		}
 	}
@@ -62,17 +61,23 @@ func (group *Parenthesis) Reindent(buf *bytes.Buffer, parent []Reindenter, paren
 	return nil
 }
 
-// IncrementIndentLevel indents by its specified indent level
-func (group *Parenthesis) IncrementIndentLevel(lev int) {
+// IncrementIndent indents by its specified indent level
+func (group *Parenthesis) IncrementIndent(lev int) {
 	group.IndentLevel += lev
 
+	// Preprocess punctuation and enrich with surrounding information
+	elements, err := processPunctuation(group.Element, group.Options.Whitespace)
+	if err != nil {
+		elements = group.Element
+	}
+
 	// Iterate and increase indent of child elements too
-	for _, el := range group.Element {
-		el.IncrementIndentLevel(lev)
+	for _, el := range elements {
+		el.IncrementIndent(lev)
 	}
 }
 
-func (group *Parenthesis) writeParenthesis(buf *bytes.Buffer, token, previousParentToken Token, indent, columnCount int, isColumnArea, isFirstValue, hasIntermediate bool) {
+func (group *Parenthesis) writeParenthesis(buf *bytes.Buffer, token, previousParentToken Token, indent int, isColumnArea bool, columnCount, i int, hasIntermediate bool) {
 
 	// Prepare short variables for better visibility
 	var INDENT = group.Options.Indent
@@ -83,7 +88,7 @@ func (group *Parenthesis) writeParenthesis(buf *bytes.Buffer, token, previousPar
 	switch {
 
 	// Fix missing whitespaces for select clauses moved to the new line in select columns
-	case isColumnArea && previousParentToken.Type == lexer.ON && token.Type == lexer.STARTPARENTHESIS:
+	case isColumnArea && previousParentToken.ContinueLine() && token.Type == lexer.STARTPARENTHESIS:
 		buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
 
 	// Don't move ENDPARENTHESIS to new line if there is no intermediate segment as a reason
@@ -110,7 +115,9 @@ func (group *Parenthesis) writeParenthesis(buf *bytes.Buffer, token, previousPar
 	// Token values
 	case token.Type == lexer.COMMA:
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
-	case isFirstValue:
+	case hasIntermediate && i == 1:
+		buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
+	case i == 1:
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	case strings.HasPrefix(token.Value, "::"):
 		buf.WriteString(fmt.Sprintf("%s", token.Value))

@@ -18,7 +18,7 @@ func TestReindentSubqueryGroup(t *testing.T) {
 	}{
 		{
 			name:         "normalcase column area",
-			isColumnArea: true,
+			isColumnArea: true, // In column area all values are indented by one
 			src: []Reindenter{
 				Token{Options: options, Token: lexer.Token{Type: lexer.STARTPARENTHESIS, Value: "("}},
 				&Select{
@@ -27,7 +27,7 @@ func TestReindentSubqueryGroup(t *testing.T) {
 						Token{Options: options, Token: lexer.Token{Type: lexer.SELECT, Value: "SELECT"}},
 						Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxxxxx"}},
 					},
-					IndentLevel: 1,
+					IndentLevel: 0,
 				},
 				&From{
 					Options: options,
@@ -35,7 +35,7 @@ func TestReindentSubqueryGroup(t *testing.T) {
 						Token{Options: options, Token: lexer.Token{Type: lexer.FROM, Value: "FROM"}},
 						Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxxxxx"}},
 					},
-					IndentLevel: 1,
+					IndentLevel: 0,
 				},
 				Token{Options: options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}},
 			},
@@ -43,7 +43,7 @@ func TestReindentSubqueryGroup(t *testing.T) {
 		},
 		{
 			name:         "normalcase outside column area",
-			isColumnArea: false,
+			isColumnArea: false, // No additional indent outside of column area
 			src: []Reindenter{
 				Token{Options: options, Token: lexer.Token{Type: lexer.STARTPARENTHESIS, Value: "("}},
 				&Select{
@@ -52,7 +52,7 @@ func TestReindentSubqueryGroup(t *testing.T) {
 						Token{Options: options, Token: lexer.Token{Type: lexer.SELECT, Value: "SELECT"}},
 						Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxxxxx"}},
 					},
-					IndentLevel: 1,
+					IndentLevel: 0,
 				},
 				&From{
 					Options: options,
@@ -60,17 +60,17 @@ func TestReindentSubqueryGroup(t *testing.T) {
 						Token{Options: options, Token: lexer.Token{Type: lexer.FROM, Value: "FROM"}},
 						Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxxxxx"}},
 					},
-					IndentLevel: 1,
+					IndentLevel: 0,
 				},
 				Token{Options: options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}},
 			},
-			want: "\n  (\n    SELECT\n      xxxxxx\n    FROM xxxxxx\n  )",
+			want: "\n(\n  SELECT\n    xxxxxx\n  FROM xxxxxx\n)",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := &bytes.Buffer{}
-			el := &Subquery{Options: options, Element: tt.src, IndentLevel: 1}
+			el := &Subquery{Options: options, Element: tt.src, IndentLevel: 0}
 			el.IsColumnArea = tt.isColumnArea
 
 			_ = el.Reindent(buf, nil, 0)

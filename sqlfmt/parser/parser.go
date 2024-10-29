@@ -344,21 +344,6 @@ func (r *Parser) isNewSegment(idx int) (bool, int) {
 	// Positive indicators:
 	//
 
-	// Check if token is opening a sub query followed by another one
-	if tokenCurrent.Type == lexer.STARTPARENTHESIS && tokenPrevious.Type == lexer.STARTPARENTHESIS {
-		return true, r.indentLevel + 1
-	}
-
-	// Check if token is opening sub query, indicating subsegment and give it extra indent
-	if tokenCurrent.Type == lexer.STARTPARENTHESIS && tokenNext.Type == lexer.SELECT {
-		return true, r.indentLevel + 1
-	}
-
-	// Check if token is opening CASE. Cases are complex, always move them to the next line with indent
-	//if tokenCurrent.Type == lexer.CASE {
-	//	return true, r.indentLevel + 1
-	//}
-
 	// Check if token is indicating join clause.
 	// However, ignore keyword if it appears in start of join group such as LEFT INNER JOIN.
 	// In this case, "INNER" and "JOIN" are group keyword, but should not make subGroup
@@ -445,9 +430,12 @@ func (r *Parser) buildReindenter() reindenters.Reindenter {
 		endToken := reindenters.Token{Options: r.options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}}
 		elements = append(elements, endToken)
 
-		// Create subquery indenter if first keyword is SELECT
-		// Will behave like Parenthesis group, but can might be good to distinguish for some use cases
-		if _, isSubQuery := elements[1].(*reindenters.Select); isSubQuery {
+		// Create subquery indenter if first keyword is SELECT or related keyword. Subqueries are not a
+		// lot different to parenthesis groups, but this gives us additional information and format control
+		switch elements[1].(type) {
+		case *reindenters.Select:
+			return &reindenters.Subquery{Options: r.options, Element: elements, IndentLevel: identLevel}
+		case *reindenters.With:
 			return &reindenters.Subquery{Options: r.options, Element: elements, IndentLevel: identLevel}
 		}
 
