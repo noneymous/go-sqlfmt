@@ -13,7 +13,6 @@ type Select struct {
 	Elements    []Formatter
 	IndentLevel int
 	*Options    // Options used later to format element
-	ColumnCount int
 }
 
 // Format reindents and formats elements accordingly
@@ -30,46 +29,36 @@ func (formatter *Select) Format(buf *bytes.Buffer, parent []Formatter, parentIdx
 
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
 	var previousToken Token
-	for i, el := range separate(elements, WHITESPACE) {
-		switch v := el.(type) {
-		case Token, string:
-			if errWrite := formatter.writeSelect(buf, el, previousToken, formatter.IndentLevel); errWrite != nil {
-				return fmt.Errorf("failed writing select: %s", errWrite)
+	for i, el := range elements {
+
+		// Write element or recursively call it's Format function
+		if token, ok := el.(Token); ok {
+			formatter.writeSelect(buf, token, previousToken, formatter.IndentLevel, i)
+		} else {
+
+			// Set peripheral parameters
+			switch v2 := el.(type) {
+			case *Parenthesis:
+				v2.IsColumnArea = true
+				v2.PositionInParent = i
+			case *Subquery:
+				v2.IsColumnArea = true
+			case *Function:
+				v2.IsColumnArea = true
 			}
-		case *Case:
-			if previousToken.Type == lexer.COMMA {
-				v.hasCommaBefore = true
-			}
-			_ = v.Format(buf, elements, i)
-			formatter.ColumnCount++ // Case group in Select clause must be in column area
-		case *Parenthesis:
-			v.IsColumnArea = true
-			v.ColumnCount = formatter.ColumnCount
-			_ = v.Format(buf, elements, i)
-			formatter.ColumnCount++
-		case *Subquery:
-			if previousToken.Type == lexer.EXISTS {
-				_ = v.Format(buf, elements, i)
-				continue
-			}
-			v.IsColumnArea = true
-			v.ColumnCount = formatter.ColumnCount
-			_ = v.Format(buf, elements, i)
-		case *Function:
-			v.IsColumnArea = true
-			v.ColumnCount = formatter.ColumnCount
-			_ = v.Format(buf, elements, i)
-			formatter.ColumnCount++
-		case Formatter:
-			_ = v.Format(buf, elements, i)
-			formatter.ColumnCount++
-		default:
-			return fmt.Errorf("invalid element '%#v'", v)
+
+			// Increment indent, as everything within SELECT should be indented
+			el.AddIndent(1)
+
+			// Recursively format nested elements
+			_ = el.Format(buf, elements, i)
 		}
 
 		// Remember last Token element
 		if token, ok := el.(Token); ok {
 			previousToken = token
+		} else {
+			previousToken = Token{}
 		}
 	}
 
@@ -93,7 +82,7 @@ func (formatter *Select) AddIndent(lev int) {
 	}
 }
 
-func (formatter *Select) writeSelect(buf *bytes.Buffer, el interface{}, previousToken Token, indent int) error {
+func (formatter *Select) writeSelect(buf *bytes.Buffer, token, previousToken Token, indent int, position int) {
 
 	// Prepare short variables for better visibility
 	var INDENT = formatter.Indent
@@ -101,34 +90,18 @@ func (formatter *Select) writeSelect(buf *bytes.Buffer, el interface{}, previous
 	var WHITESPACE = formatter.Whitespace
 
 	// Write element
-	if token, isToken := el.(Token); isToken {
-		switch token.Type {
-		case lexer.SELECT, lexer.INTO:
-			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
-		case lexer.EXISTS, lexer.ANY:
-			buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
-			formatter.ColumnCount++
-		case lexer.AS, lexer.DISTINCT, lexer.DISTINCTROW, lexer.GROUP, lexer.ON:
-			buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
-		case lexer.COMMA:
-			buf.WriteString(fmt.Sprintf("%s", token.Value))
-		default:
-			return fmt.Errorf("unexpected SELECT token '%#v'", token.Value)
-		}
-	} else if str, isStr := el.(string); isStr {
-
-		// Remove whitespaces from value
-		str = strings.Trim(str, WHITESPACE)
-
-		// Add newline and spacing for first columns or if previous token ended with comma
-		if formatter.ColumnCount == 0 || previousToken.Type == lexer.COMMA {
-			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, str))
-		} else {
-			buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, str))
-		}
-
-		// Increment column count
-		formatter.ColumnCount++
+	switch {
+	case token.Type == lexer.SELECT || token.Type == lexer.INTO:
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+	case token.Type == lexer.EXISTS:
+		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
+	case token.Type == lexer.AS || token.Type == lexer.DISTINCT || token.Type == lexer.DISTINCTROW || token.Type == lexer.WITHIN || token.Type == lexer.GROUP || token.Type == lexer.ON:
+		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
+	case position == 1 || previousToken.Type == lexer.COMMA:
+		buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
+	case token.Type == lexer.COMMA:
+		buf.WriteString(fmt.Sprintf("%s", token.Value))
+	default:
+		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
-	return nil
 }

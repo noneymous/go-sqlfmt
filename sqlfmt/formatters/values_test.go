@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentValuesGroup(t *testing.T) {
+func TestReindentValues(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string
@@ -24,7 +24,7 @@ func TestReindentValuesGroup(t *testing.T) {
 				Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxxxx"}},
 				Token{Options: options, Token: lexer.Token{Type: lexer.DO, Value: "DO"}},
 			},
-			want: "\nVALUES xxxxx\nON xxxxx\nDO ",
+			want: "\nVALUES xxxxx\nON xxxxx DO",
 		},
 	}
 	for _, tt := range tests {

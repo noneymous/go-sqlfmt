@@ -27,8 +27,8 @@ func Format(sql string, options *formatters.Options) (string, error) {
 
 	// Format parsed tokens into prettified and uniformly formatted SQL string
 	var buf bytes.Buffer
-	for _, tokenParsed := range tokensParsed {
-		if err := tokenParsed.Format(&buf, nil, 0); err != nil {
+	for i, tokenParsed := range tokensParsed {
+		if err := tokenParsed.Format(&buf, tokensParsed, i); err != nil {
 			return "", err
 		}
 	}
@@ -44,7 +44,7 @@ func Format(sql string, options *formatters.Options) (string, error) {
 	// Safety check, compare if formatted query still has the same logic as input
 	if !compare(sql, sqlFormatted) {
 		fmt.Println(sqlFormatted)
-		return "", fmt.Errorf("an internal error has occurred")
+		return "", fmt.Errorf("formatted result does not match input semantically")
 	}
 
 	// Return successfully formatted SQL string

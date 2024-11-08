@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentOrderByGroup(t *testing.T) {
+func TestReindentOrderBy(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string
@@ -22,7 +22,7 @@ func TestReindentOrderByGroup(t *testing.T) {
 				Token{Options: options, Token: lexer.Token{Type: lexer.BY, Value: "BY"}},
 				Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxxxxx"}},
 			},
-			want: "\nORDER BY\n  xxxxxx",
+			want: "\nORDER BY xxxxxx",
 		},
 	}
 	for _, tt := range tests {

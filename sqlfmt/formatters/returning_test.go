@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentReturningGroup(t *testing.T) {
+func TestReindentReturning(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string
@@ -23,7 +23,7 @@ func TestReindentReturningGroup(t *testing.T) {
 				Token{Options: options, Token: lexer.Token{Type: lexer.COMMA, Value: ","}},
 				Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "something1"}},
 			},
-			want: "\nRETURNING\n  something1,\n  something1",
+			want: "\nRETURNING something1, something1",
 		},
 	}
 	for _, tt := range tests {

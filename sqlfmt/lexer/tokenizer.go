@@ -219,7 +219,7 @@ func (t *tokenizer) scan() (Token, error) {
 		}
 
 		// Check if value is keyword. Subsequent parenthesis would not indicate a function but a sub query.
-		if ttype, ok := keywordMap[key]; ok {
+		if ttype, ok := keywordMap[val]; ok { // Use val instead of key, because "." should not be splitted for keyword lookups!
 
 			// Ambiguous edge case. Table name might (such as "user") might collide with Postgres'
 			// parenthesis-less function "USER". To address ambiguity, Postgres clients must put "user" into

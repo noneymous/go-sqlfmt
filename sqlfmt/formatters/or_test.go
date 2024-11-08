@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentOrGroup(t *testing.T) {
+func TestReindentOr(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string
@@ -18,7 +18,7 @@ func TestReindentOrGroup(t *testing.T) {
 		{
 			name: "normalcase",
 			tokenSource: []Formatter{
-				Token{Options: options, Token: lexer.Token{Type: lexer.ORGROUP, Value: "OR"}},
+				Token{Options: options, Token: lexer.Token{Type: lexer.OR, Value: "OR"}},
 				Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "something1"}},
 				Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "something2"}},
 			},
@@ -28,7 +28,7 @@ func TestReindentOrGroup(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := &bytes.Buffer{}
-			el := &OrGroup{Options: options, Elements: tt.tokenSource}
+			el := &Or{Options: options, Elements: tt.tokenSource}
 
 			_ = el.Format(buf, nil, 0)
 			got := buf.String()

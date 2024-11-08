@@ -10,10 +10,9 @@ This is a fork of https://github.com/kanmu/go-sqlfmt which seems to abandoned.
 Some of its open pull requests were applied too. 
 The complete code was simplified, cleaned up and restructured.
 
-## Example Direct Call
+## Example Usage Go String
 
 ```go
-
 import "github.com/noneymous/go-sqlfmt/sqlfmt"
 
 sql := `
@@ -33,7 +32,12 @@ sqlFormatted, errFormat := sqlfmt.Format(sql, &sqlfmt.Options{})
 if errFormat != nil {
     return
 }
+```
 
+## Installation
+
+```bash
+go get github.com/noneymous/go-sqlfmt/cmd/sqlfmt
 ```
 
 ## Example .go File
@@ -66,64 +70,14 @@ and xxx in ($2, $3) order by xxx`).Scan(&id)
 }
 ```
 
-The above will be formatted into the following:
+## Example Usage .go File
 
-```go
-package main
-
-import (
-	"database/sql"
-)
-
-func sendSQL() int {
-	var id int
-	var db *sql.DB
-	db.QueryRow(`
-SELECT
-  xxx
-  , xxx
-  , xxx
-  , CASE
-       WHEN xxx IS NULL THEN xxx
-       ELSE true
-    END AS xxx
-FROM xxx AS xxx
-JOIN xxx
-ON xxx = xxx
-JOIN xxx AS xxx
-ON xxx = xxx
-LEFT OUTER JOIN xxx AS xxx
-ON xxx = xxx
-WHERE xxx IN (
-  SELECT
-    xxx
-  FROM (
-    SELECT
-      xxx
-    FROM xxx
-  ) AS xxx
-  WHERE xxx = xxx
-)
-AND xxx IN ($2, $3)
-ORDER BY
-  xxx`).Scan(&id)
-	return id
-}
-```
-
-## Installation
-
-```bash
-go get github.com/noneymous/go-sqlfmt/cmd/sqlfmt
-```
-## Usage
-
-Provide flags and input files or directory  
+Provide flags and input files or directory
   ```bash
   $ sqlfmt -w input_file.go 
   ```
 
-## Flags
+## Flags Usage .go File
 ```
   -l
 		Do not print reformatted sources to standard output.
@@ -141,10 +95,9 @@ Provide flags and input files or directory
                 Write the distance from the edge to the begin of SQL statements
 ```
 
-## Limitations
+## Limitations Usage .go File
 
 The `sqlfmt` is currently only able to format SQL statements in **`QueryRow`**, **`Query`**, **`Exec`**  functions from the `"database/sql"` package.
-
 
 The following SQL statements will be formatted
 
@@ -170,32 +123,6 @@ FROM xxx`).Scan(&id)
   	return id
   }
   ```
-
-
-## Not perfectly supported
-
-- `IS DISTINCT FROM`
-- `WITHIN GROUP`
-- `DISTINCT ON(xxx)`
-- `select(array)`
-- Comments after comma such as
-  ```
-  select 
-         xxxx, --comment
-         xxxx
-  
-  SELECT
-         xxxx, /* comment */
-         xxxx
-  ```
-- Nested square brackets or braces such as `[[xx], xx]`
-  - Currently, being formatted into this: `[[ xx], xx]`
-  - Ideally, it should be formatted into this: `[[xx], xx]`
-
-- Nested functions such as `sum(average(xxx))`
-  - Currently, being formatted into this: `SUM( AVERAGE(xxx))`
-  - Ideally, it should be formatted into this: `SUM(AVERAGE(xxx))`
-  
   
 ## Contribution
 

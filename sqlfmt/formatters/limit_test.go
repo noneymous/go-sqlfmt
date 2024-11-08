@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentLimitGroup(t *testing.T) {
+func TestReindentLimit(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string

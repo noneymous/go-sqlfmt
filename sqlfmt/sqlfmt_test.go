@@ -36,18 +36,18 @@ FROM (
     col4
   FROM contents
   WHERE
-    active = true AND
-    attr2 = true AND
-    attr3 = true AND
-    attr4 = true AND
-    attr5 = true AND
-    attr6 IN (
+    active = true
+    AND attr2 = true
+    AND attr3 = true
+    AND attr4 = true
+    AND attr5 = true
+    AND attr6 IN (
       SELECT
         *
       FROM attributes
-    ) AND
-    attr6 = true AND
-    attr7 = true
+    )
+    AND attr6 = true
+    AND attr7 = true
 ) AS tble1
 WHERE col3 ILIKE '%substr%' AND col4 > (
   SELECT
@@ -133,11 +133,12 @@ LIMIT 1`,
 		{
 			name: "Select ANY",
 			sql:  `select any ( select xxx from xxx ) from xxx where xxx limit xxx`,
-			want: `SELECT ANY (
-  SELECT
-    xxx
-  FROM xxx
-)
+			want: `SELECT
+  ANY (
+    SELECT
+      xxx
+    FROM xxx
+  )
 FROM xxx
 WHERE xxx
 LIMIT xxx`,
@@ -149,12 +150,110 @@ LIMIT xxx`,
   SELECT
     SUM(Quantity) AS Total
   FROM OrderDetails
-  GROUP BY
-    ProductID
+  GROUP BY ProductID
 )
 SELECT
   AVG(Total) average_product_quantity
 FROM cte_quantity;`,
+		},
+
+		/*
+		 * Parenthesis variations
+		 */
+		{
+			name: "Parenthesis variations",
+			sql:  `SELECT DISTINCT ON (col1, col2) a0, t1.attr1 AS a1, t1.attr2 AS a2, pg_catalog.not_a_function (db.oid, 'CREATE') AS a3, pg_catalog.HAS_DATABASE_PRIVILEGE(t1.oid, 'CREATE') AS a4, DATE_TRUNC('DAY', TO_TIMESTAMP('2022-01-01')) AS a5 FROM tble1 t1 LEFT JOIN tble2 t2 ON (t2.id = t1.id) WHERE db IN ('postgres', 'edb') AND ANY ((SELECT * FROM tble3 WHERE rel IN ('r', 's', 't', 'p') AND oid = 33176310:: oid AND col3 = '' OR ((port = 80 AND port = 443) OR (port = 80 AND port = 443))):: oid []) ORDER BY attr, attr2`,
+			want: `SELECT DISTINCT ON (col1, col2) a0,
+  t1.attr1 AS a1,
+  t1.attr2 AS a2,
+  pg_catalog.not_a_function (db.oid, 'CREATE') AS a3,
+  pg_catalog.HAS_DATABASE_PRIVILEGE(t1.oid, 'CREATE') AS a4,
+  DATE_TRUNC('DAY', TO_TIMESTAMP('2022-01-01')) AS a5
+FROM tble1 t1
+LEFT JOIN tble2 t2 ON (t2.id = t1.id)
+WHERE db IN ('postgres', 'edb') AND ANY (
+  (
+    SELECT
+      *
+    FROM tble3
+    WHERE
+      rel IN ('r', 's', 't', 'p')
+      AND oid = 33176310:: oid
+      AND col3 = ''
+      OR (
+        (
+          port = 80
+          AND port = 443
+        )
+        OR (
+          port = 80
+          AND port = 443
+        )
+      )
+  ):: oid []
+)
+ORDER BY attr, attr2`,
+		},
+
+		/*
+		 * AND / OR clauses
+		 */
+		{
+			name: "AND / OR clauses",
+			sql:  `select * from all_hosts where ip = "127.0.0.1" OR dns_name = "localhost"`,
+			want: `SELECT
+  *
+FROM all_hosts
+WHERE ip = "127.0.0.1" OR dns_name = "localhost"`,
+		},
+		{
+			name: "AND / OR clauses long",
+			sql:  `select * from all_hosts where ip = "127.0.0.1" OR ip = "127.0.0.2" OR ip = "127.0.0.3" OR dns_name = "localhost" AND protocol = "tcp"`,
+			want: `SELECT
+  *
+FROM all_hosts
+WHERE
+  ip = "127.0.0.1"
+  OR ip = "127.0.0.2"
+  OR ip = "127.0.0.3"
+  OR dns_name = "localhost"
+  AND protocol = "tcp"`,
+		},
+		{
+			name: "AND / OR clauses grouped",
+			sql:  `select *  from all_hosts where ip = "127.0.0.1" AND ( port = 80 OR port = 443) AND protocol = "tcp" limit 1`,
+			want: `SELECT
+  *
+FROM all_hosts
+WHERE
+  ip = "127.0.0.1"
+  AND (
+    port = 80
+    OR port = 443
+  )
+  AND protocol = "tcp"
+LIMIT 1`,
+		},
+		{
+			name: "AND / OR clauses grouped nested",
+			sql:  `SELECT * FROM all_hosts WHERE ip = "127.0.0.1" AND ((port = 80 AND port = 443) OR (port = 80 AND port = 443)) AND protocol = "tcp" LIMIT 1`,
+			want: `SELECT
+  *
+FROM all_hosts
+WHERE
+  ip = "127.0.0.1"
+  AND (
+    (
+      port = 80
+      AND port = 443
+    )
+    OR (
+      port = 80
+      AND port = 443
+    )
+  )
+  AND protocol = "tcp"
+LIMIT 1`,
 		},
 
 		/*
@@ -167,13 +266,13 @@ FROM cte_quantity;`,
   *
 FROM tble
 WHERE
-  a = 1 AND
-  b != 2 AND
-  c <> 3 AND
-  d > 4 AND
-  e < 5 AND
-  f >= 6 AND
-  g <= 7`,
+  a = 1
+  AND b != 2
+  AND c <> 3
+  AND d > 4
+  AND e < 5
+  AND f >= 6
+  AND g <= 7`,
 		},
 		{
 			name: "Basic comparators formatted into one line",
@@ -181,7 +280,10 @@ WHERE
 			want: `SELECT
   *
 FROM tble
-WHERE a = 1 AND b > 2 AND c < 3`,
+WHERE
+  a = 1
+  AND b > 2
+  AND c < 3`,
 		},
 		{
 			name: "Advanced comparators",
@@ -190,10 +292,10 @@ WHERE a = 1 AND b > 2 AND c < 3`,
   *
 FROM tble
 WHERE
-  a ~~ 1 AND
-  b ~~* 2 AND
-  c !~~ 3 AND
-  d !~~* 4`,
+  a ~~ 1
+  AND b ~~* 2
+  AND c !~~ 3
+  AND d !~~* 4`,
 		},
 		{
 			name: "Invalid comparators",
@@ -202,10 +304,10 @@ WHERE
   *
 FROM tble
 WHERE
-  a~~~1 AND
-  b!2 AND
-  c!== 3 AND
-  d ===4`,
+  a~~~1
+  AND b!2
+  AND c!== 3
+  AND d ===4`,
 		},
 		{
 			name: "Invalid comparators 2",
@@ -214,10 +316,10 @@ WHERE
   *
 FROM tble
 WHERE
-  a !=* 1 AND
-  b<>>2 AND
-  c><3 AND
-  d <==4`,
+  a !=* 1
+  AND b<>>2
+  AND c><3
+  AND d <==4`,
 		},
 
 		/*
@@ -238,8 +340,7 @@ WHERE
 FROM pg_catalog.pg_database db
 LEFT OUTER JOIN pg_catalog.pg_tablespace ta ON db.dattablespace = ta.oid
 WHERE db.oid > 16383:: OID OR db.datname IN ('postgres', 'edb')
-ORDER BY
-  datname`,
+ORDER BY datname`,
 		},
 		{
 			name: "All sorts mixed elements with WHERE EXISTS",
@@ -396,20 +497,17 @@ WHERE 'value' = ANY (
 		{
 			name: "SET query",
 			sql:  `SET client_encoding TO 'UTF8'`,
-			want: `SET
-  client_encoding TO 'UTF8'`,
+			want: `SET client_encoding TO 'UTF8'`,
 		},
 		{
 			name: "SET query with unformatted equal 1",
 			sql:  `SET client_encoding= 'UNICODE'`,
-			want: `SET
-  client_encoding = 'UNICODE'`,
+			want: `SET client_encoding = 'UNICODE'`,
 		},
 		{
 			name: "SET query with unformatted equal 2",
 			sql:  `SET client_min_messages=notice`,
-			want: `SET
-  client_min_messages = notice`,
+			want: `SET client_min_messages = notice`,
 		},
 		{
 			name: "Type cast OID",
@@ -485,8 +583,7 @@ WHERE t < DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AND t < DATE_TRUNC('DAY', CURRENT
   PG_CATALOG.HAS_DATABASE_PRIVILEGE(db.oid, 'CREATE') AS cancreate9
 FROM pg_catalog.pg_database db
 WHERE db.oid > 16383:: OID
-ORDER BY
-  datname`,
+ORDER BY datname`,
 		},
 
 		/*
@@ -495,11 +592,11 @@ ORDER BY
 		 */
 		{
 			name: "distinct from",
-			sql:  `SELECT foo, bar FROM table WHERE foo IS NOT DISTINCT FROM bar;`,
+			sql:  `SELECT foo, bar FROM "table" WHERE foo IS NOT DISTINCT FROM bar;`,
 			want: `SELECT
   foo,
   bar
-FROM table
+FROM "table"
 WHERE foo IS NOT DISTINCT
 FROM bar;`,
 		},
@@ -507,59 +604,54 @@ FROM bar;`,
 			name: "within group",
 			sql:  `SELECT PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY temperature) FROM city_data;`,
 			want: `SELECT
-  PERCENTILE_DISC(0.5) WITHIN
-GROUP (ORDER BY temperature)
+  PERCENTILE_DISC(0.5) WITHIN GROUP (
+    ORDER BY temperature
+  )
 FROM city_data;`,
 		},
 		{
 			name: "distinct on 1",
-			sql:  `SELECT DISTINCT ON (Spalte1, Spalte2) Spalte1, Spalte2 FROM Tabellenname ORDER BY Spalte1, Spalte2;`,
-			want: `SELECT DISTINCT ON
-  (Spalte1, Spalte2) Spalte1,
-  Spalte2
+			sql:  `SELECT DISTINCT ON (col1, col2) col1, col2 FROM Tabellenname ORDER BY col1, col2;`,
+			want: `SELECT DISTINCT ON (col1, col2) col1,
+  col2
 FROM Tabellenname
-ORDER BY
-  Spalte1,
-  Spalte2;`,
+ORDER BY col1, col2;`,
 		},
 		{
 			name: "distinct on 2",
-			sql:  `SELECT DISTINCT ON (Spalte1, Spalte2) Spalte1 FROM Tabellenname ORDER BY Spalte1, Spalte2;`,
-			want: `SELECT DISTINCT ON
-  (Spalte1, Spalte2) Spalte1
+			sql:  `SELECT DISTINCT ON (col1, col2) col1 FROM Tabellenname ORDER BY col1, col2;`,
+			want: `SELECT DISTINCT ON (col1, col2) col1
 FROM Tabellenname
-ORDER BY
-  Spalte1,
-  Spalte2;`,
+ORDER BY col1, col2;`,
 		},
 		{
 			name: "nested no function",
-			sql:  `SELECT sum(customfn(xxx)) FROM table`,
+			sql:  `SELECT sum(customfn(xxx)) FROM "table"`,
 			want: `SELECT
   SUM(customfn (xxx))
-FROM table`,
+FROM "table"`,
 		},
 		{
 			name: "nested functions",
-			sql:  `SELECT sum(avg(xxx)) FROM table`,
+			sql:  `SELECT sum(avg(xxx)) FROM "table"`,
 			want: `SELECT
   SUM( AVG(xxx))
-FROM table`,
+FROM "table"`,
 		},
 		{
 			name: "nested functions 2",
-			sql:  `SELECT test, sum(avg(xxx)) FROM table`,
+			sql:  `SELECT test, sum(avg(xxx)) FROM "table"`,
 			want: `SELECT
   test,
   SUM( AVG(xxx))
-FROM table`,
+FROM "table"`,
 		},
 		{
 			name: "multidimensional array",
-			sql:  `SELECT [[xx], xx] FROM table`,
+			sql:  `SELECT [[xx], xx] FROM "table"`,
 			want: `SELECT
   [[ xx], xx]
-FROM table`,
+FROM "table"`,
 		},
 		{
 			name: "select with line comment",
@@ -576,6 +668,209 @@ FROM table`,
   xxxx,
   /* comment */ xxxx`,
 		},
+
+		/*
+		 * INSERT query
+		 */
+		{
+			name: "Insert VALUES one",
+			sql:  `INSERT INTO Customers (CustomerName, ContactName, Address, City, PostalCode, Country) VALUES ('Cardinal', 'Tom B. Erichsen', 'Skagen 21', 'Stavanger', '4006', 'Norway')`,
+			want: `INSERT INTO Customers
+  (CustomerName, ContactName, Address, City, PostalCode, Country)
+VALUES
+  ('Cardinal', 'Tom B. Erichsen', 'Skagen 21', 'Stavanger', '4006', 'Norway')`,
+		},
+		{
+			name: "Insert VALUES mutliple",
+			sql:  `INSERT INTO Customers(first_name, last_name, age, country) VALUES ('Harry', 'Potter', 31, 'USA'), ('Chris', 'Hemsworth', 43, 'USA'), ('Tom', 'Holland', 26, 'UK')`,
+			want: `INSERT INTO Customers
+  (first_name, last_name, age, country)
+VALUES
+  ('Harry', 'Potter', 31, 'USA'),
+  ('Chris', 'Hemsworth', 43, 'USA'),
+  ('Tom', 'Holland', 26, 'UK')`,
+		},
+		{
+			name: "Insert SET short",
+			sql:  `INSERT INTO actor SET first_name = 'Tom', last_name  = 'Hanks'`,
+			want: `INSERT INTO actor
+SET first_name = 'Tom', last_name = 'Hanks'`,
+		},
+		{
+			name: "Insert SET long",
+			sql:  `INSERT INTO actor SET first_name = 'Tom', last_name  = 'Hanks', gender  = 'M', country  = 'US'`,
+			want: `INSERT INTO actor
+SET
+  first_name = 'Tom',
+  last_name = 'Hanks',
+  gender = 'M',
+  country = 'US'`,
+		},
+
+		/*
+		 * UPDATE query
+		 */
+		{
+			name: "UPDATE SET short",
+			sql:  `UPDATE Customers SET ContactName = 'Alfred Schmidt', City= 'Frankfurt' WHERE CustomerID = 1`,
+			want: `UPDATE Customers
+SET ContactName = 'Alfred Schmidt', City = 'Frankfurt'
+WHERE CustomerID = 1`,
+		},
+		{
+			name: "UPDATE SET long",
+			sql:  `UPDATE Customers SET ContactName = 'Alfred Schmidt', City= 'Frankfurt', Gender= 'M', Country= 'Germany' WHERE CustomerID = 1 AND Active = true AND Show = true AND Accepted = true`,
+			want: `UPDATE Customers
+SET
+  ContactName = 'Alfred Schmidt',
+  City = 'Frankfurt',
+  Gender = 'M',
+  Country = 'Germany'
+WHERE
+  CustomerID = 1
+  AND Active = true
+  AND Show = true
+  AND Accepted = true`,
+		},
+		{
+			name: "UPDATE complex",
+			sql:  `UPDATE books SET books.primary_author = authors.name, books.primary_author_surname = authors.surname, books.primary_author_gender = authors.gender FROM books INNER JOIN authors ON books.author_id = authors.id WHERE books.title = 'The Hobbit'`,
+			want: `UPDATE books
+SET
+  books.primary_author = authors.name,
+  books.primary_author_surname = authors.surname,
+  books.primary_author_gender = authors.gender
+FROM books
+INNER JOIN authors ON books.author_id = authors.id
+WHERE books.title = 'The Hobbit'`,
+		},
+		{
+			name: "UPDATE complex 2",
+			sql:  `Update C Set C.Name = CAST(p.Number as varchar(10)) + '|'+ C.Name FROM Catelog.Component C JOIN Catelog.ComponentPart cp ON p.ID = cp.PartID JOIN Catelog.Component c ON cp.ComponentID = c.ID where p.BrandID = 1003 AND ct.Name='Door' + '|'+ C.Name`,
+			want: `UPDATE C
+SET
+  C.Name = CAST(p.Number AS VARCHAR(10)) + '|' + C.Name
+FROM Catelog.Component C
+JOIN Catelog.ComponentPart cp ON p.ID = cp.PartID
+JOIN Catelog.Component c ON cp.ComponentID = c.ID
+WHERE p.BrandID = 1003 AND ct.Name = 'Door' + '|' + C.Name`,
+		},
+
+		/*
+		 * CREATE / ALTER / DELETE / DROP
+		 */
+		{
+			name: "CREATE DATABASE",
+			sql:  `CREATE DATABASE IF NOT EXISTS db_name`,
+			want: `CREATE DATABASE IF NOT EXISTS db_name`,
+		},
+		{
+			name: "CREATE TABLE",
+			sql:  `CREATE TABLE IF NOT EXISTS table_name`,
+			want: `CREATE TABLE IF NOT EXISTS table_name`,
+		},
+		{
+			name: "CREATE TABLE with types",
+			sql:  `CREATE TABLE IF NOT EXISTS table_name(column1 TEXT, column2 INTEGER, column3 BOOLEAN, column4 BOOLEAN, PRIMARY KEY(column1,column2))`,
+			want: `CREATE TABLE IF NOT EXISTS table_name (
+  column1 TEXT,
+  column2 INTEGER,
+  column3 BOOLEAN,
+  column4 BOOLEAN,
+  PRIMARY KEY (column1, column2)
+)`,
+		},
+		{
+			name: "CREATE TABLE with types complex",
+			sql:  `CREATE TABLE Companies (id int, name varchar(50), address text, email varchar(50), phone varchar(10))`,
+			want: `CREATE TABLE Companies (
+  id INT,
+  name VARCHAR(50),
+  address TEXT,
+  email VARCHAR(50),
+  phone VARCHAR(10)
+)`,
+		},
+		{
+			name: "CREATE TABLE AS",
+			sql:  `CREATE TABLE CustomersBackup AS (SELECT * FROM Customers)`,
+			want: `CREATE TABLE CustomersBackup AS (
+  SELECT
+    *
+  FROM Customers
+)`,
+		},
+		{
+			name: "CREATE TABLE AS without parentheses",
+			sql:  `CREATE TABLE TestTable AS SELECT customername, contactname FROM customers WHERE active = true`,
+			want: `CREATE TABLE TestTable AS
+  SELECT
+    customername,
+    contactname
+  FROM customers
+  WHERE active = true`,
+		},
+		{
+			name: "ALTER TABLE ADD",
+			sql:  `alter table table_name add column_name boolean`,
+			want: `ALTER TABLE table_name ADD column_name BOOLEAN`,
+		},
+		{
+			name: "ALTER TABLE DROP",
+			sql:  `alter table table_name drop column column_name`,
+			want: `ALTER TABLE table_name DROP COLUMN column_name`,
+		},
+		{
+			name: "ALTER TABLE RENAME",
+			sql:  `alter table table_name rename column column_name to new_name`,
+			want: `ALTER TABLE table_name RENAME COLUMN column_name TO new_name`,
+		},
+		{
+			name: "ALTER TABLE type",
+			sql:  `alter table table_name alter column column_name INTEGER`,
+			want: `ALTER TABLE table_name ALTER COLUMN column_name INTEGER`,
+		},
+		{
+			name: "ALTER TABLE MODIFY",
+			sql:  `alter table table_name modify column column_name INTEGER`,
+			want: `ALTER TABLE table_name MODIFY COLUMN column_name INTEGER`,
+		},
+		{
+			name: "ALTER TABLE MODIFY 2",
+			sql:  `alter table table_name modify column_name INTEGER`,
+			want: `ALTER TABLE table_name MODIFY column_name INTEGER`,
+		},
+		{
+			name: "DELETE",
+			sql:  `DELETE FROM "table" t1 WHERE t1.V1 > t1.V2 and t1.V3 > t1.V4 and EXISTS (SELECT * FROM "table" t2 WHERE t2.V1 = t1.V2  and t2.V2 = t1.V1 AND t2.V3 = t1.V3)`,
+			want: `DELETE FROM "table" t1
+WHERE
+  t1.V1 > t1.V2
+  AND t1.V3 > t1.V4
+  AND EXISTS (
+    SELECT
+      *
+    FROM "table" t2
+    WHERE
+      t2.V1 = t1.V2
+      AND t2.V2 = t1.V1
+      AND t2.V3 = t1.V3
+  )`,
+		},
+		{
+			name: "DELETE short",
+			sql:  `DELETE FROM Customers`,
+			want: `DELETE FROM Customers`,
+		},
+		{
+			name: "DROP TABLE",
+			sql:  `DROP TABLE Customers`,
+			want: `DROP TABLE Customers`,
+		},
+
+		/*
+		 * END
+		 */
 	}
 
 	/*

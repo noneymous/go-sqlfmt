@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentDeleteGroup(t *testing.T) {
+func TestReindentDelete(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string
@@ -22,7 +22,7 @@ func TestReindentDeleteGroup(t *testing.T) {
 				Token{Options: options, Token: lexer.Token{Type: lexer.FROM, Value: "FROM"}},
 				Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxxxxx"}},
 			},
-			want: "\nDELETE\nFROM xxxxxx",
+			want: "DELETE FROM xxxxxx",
 		},
 	}
 	for _, tt := range tests {

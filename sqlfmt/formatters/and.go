@@ -2,22 +2,21 @@ package formatters
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
+	"strings"
 )
 
-// AndGroup group formatter
-// AndGroup is AND clause not AND operator
-// AndGroup is made after new line
-// // select xxx and xxx  <= this is not AndGroup
-// // select xxx from xxx where xxx
-// // and xxx      <= this is AndGroup
-type AndGroup struct {
+// And formatter
+type And struct {
 	Elements    []Formatter
 	IndentLevel int
 	*Options    // Options used later to format element
+	SameLine    bool
 }
 
 // Format reindents and formats elements accordingly
-func (formatter *AndGroup) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int) error {
+func (formatter *And) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int) error {
 
 	// Prepare short variables for better visibility
 	var INDENT = formatter.Indent
@@ -30,20 +29,26 @@ func (formatter *AndGroup) Format(buf *bytes.Buffer, parent []Formatter, parentI
 		return err
 	}
 
+	// Check if parent's first token is indicating Join
+	var isPartOfJoin = false
+	if parent != nil {
+		if t, ok := parent[0].(Token); ok {
+			if t.IsJoinStart() {
+				isPartOfJoin = true
+			}
+		}
+	}
+
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
-	var previousToken Token
 	for i, el := range elements {
 
 		// Write element or recursively call it's Format function
 		if token, ok := el.(Token); ok {
-			write(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, false)
+			writeAnd(buf, INDENT, NEWLINE, WHITESPACE, token, formatter.IndentLevel, formatter.SameLine, isPartOfJoin)
 		} else {
-			_ = el.Format(buf, elements, i)
-		}
 
-		// Remember last Token element
-		if token, ok := el.(Token); ok {
-			previousToken = token
+			// Recursively format nested elements
+			_ = el.Format(buf, elements, i)
 		}
 	}
 
@@ -52,7 +57,7 @@ func (formatter *AndGroup) Format(buf *bytes.Buffer, parent []Formatter, parentI
 }
 
 // AddIndent increments indentation level by the given amount
-func (formatter *AndGroup) AddIndent(lev int) {
+func (formatter *And) AddIndent(lev int) {
 	formatter.IndentLevel += lev
 
 	// Preprocess punctuation and enrich with surrounding information
@@ -64,5 +69,29 @@ func (formatter *AndGroup) AddIndent(lev int) {
 	// Iterate and increase indent of child elements too
 	for _, el := range elements {
 		el.AddIndent(lev)
+	}
+}
+
+func writeAnd(
+	buf *bytes.Buffer,
+	INDENT,
+	NEWLINE,
+	WHITESPACE string,
+	token Token,
+	indent int,
+	sameLine bool,
+	isPartOfJoin bool,
+) {
+
+	// Print to same line with WHITESPACE
+	switch {
+	case strings.HasPrefix(token.Value, "::"): // Write cast token without whitespace
+		buf.WriteString(fmt.Sprintf("%s", token.Value))
+	case sameLine || isPartOfJoin:
+		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
+	case token.Type == lexer.AND || token.Type == lexer.OR: // Start of where clause
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+	default:
+		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }

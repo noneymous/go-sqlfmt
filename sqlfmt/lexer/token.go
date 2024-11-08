@@ -53,9 +53,7 @@ const (
 	EXISTS
 	HAVING
 	AND
-	ANDGROUP
 	OR
-	ORGROUP
 	IN
 	BETWEEN
 	ANY
@@ -83,7 +81,16 @@ const (
 	INTO
 	UPDATE
 	SET
+	ALTER
+	ADD
+	RENAME
+	MODIFY
+	COLUMN
+	TABLE
+	TO
 	DELETE
+	DROP
+	CREATE
 	DO
 	VALUES
 	FOR
@@ -109,17 +116,19 @@ const (
 	AT
 	LOCK
 	WITH
+	PRIMARY
+	KEY
 )
 
 // Define end keywords for each clause segment
 var (
-	EndOfSelect          = []TokenType{FROM, UNION, ENDPARENTHESIS, EOF}
+	EndOfSelect          = []TokenType{FROM, UNION, WHERE, ENDPARENTHESIS, EOF}
 	EndOfCase            = []TokenType{END, EOF}
 	EndOfFrom            = []TokenType{WHERE, INNER, OUTER, LEFT, RIGHT, JOIN, NATURAL, CROSS, ORDER, GROUP, UNION, OFFSET, LIMIT, FETCH, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
-	EndOfJoin            = []TokenType{WHERE, ORDER, GROUP, LIMIT, OFFSET, FETCH, ANDGROUP, ORGROUP, LEFT, RIGHT, INNER, OUTER, NATURAL, CROSS, UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
-	EndOfWhere           = []TokenType{GROUP, ORDER, LIMIT, OFFSET, FETCH, ANDGROUP, OR, UNION, EXCEPT, INTERSECT, RETURNING, ENDPARENTHESIS, EOF}
-	EndOfAndGroup        = []TokenType{GROUP, ORDER, LIMIT, OFFSET, FETCH, UNION, EXCEPT, INTERSECT, ANDGROUP, ORGROUP, ENDPARENTHESIS, EOF}
-	EndOfOrGroup         = []TokenType{GROUP, ORDER, LIMIT, OFFSET, FETCH, UNION, EXCEPT, INTERSECT, ANDGROUP, ORGROUP, ENDPARENTHESIS, EOF}
+	EndOfJoin            = []TokenType{WHERE, ORDER, GROUP, LIMIT, OFFSET, FETCH, LEFT, RIGHT, INNER, OUTER, NATURAL, CROSS, UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
+	EndOfWhere           = []TokenType{GROUP, ORDER, LIMIT, OFFSET, FETCH, UNION, EXCEPT, INTERSECT, RETURNING, ENDPARENTHESIS, EOF}
+	EndOfAnd             = []TokenType{GROUP, ORDER, LIMIT, OFFSET, FETCH, UNION, EXCEPT, INTERSECT, AND, OR, ENDPARENTHESIS, EOF}
+	EndOfOr              = []TokenType{GROUP, ORDER, LIMIT, OFFSET, FETCH, UNION, EXCEPT, INTERSECT, AND, OR, ENDPARENTHESIS, EOF}
 	EndOfGroupBy         = []TokenType{ORDER, LIMIT, FETCH, OFFSET, UNION, EXCEPT, INTERSECT, HAVING, ENDPARENTHESIS, EOF}
 	EndOfHaving          = []TokenType{LIMIT, OFFSET, FETCH, ORDER, UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
 	EndOfOrderBy         = []TokenType{LIMIT, FETCH, OFFSET, UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
@@ -127,10 +136,14 @@ var (
 	EndOfParenthesis     = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfTieClause       = []TokenType{SELECT, EOF}
 	EndOfUpdate          = []TokenType{WHERE, SET, RETURNING, EOF}
-	EndOfSet             = []TokenType{WHERE, RETURNING, EOF}
+	EndOfSet             = []TokenType{FROM, WHERE, RETURNING, EOF}
 	EndOfReturning       = []TokenType{EOF}
-	EndOfDelete          = []TokenType{WHERE, FROM, EOF}
-	EndOfInsert          = []TokenType{VALUES, EOF}
+	EndOfCreate          = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfAlter           = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfAdd             = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfDelete          = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfDrop            = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfInsert          = []TokenType{SET, VALUES, EOF}
 	EndOfValues          = []TokenType{UPDATE, RETURNING, EOF}
 	EndOfTypeCast        = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfLock            = []TokenType{EOF}
@@ -141,7 +154,7 @@ var (
 
 // Define keywords indicating certain segment groups
 var (
-	TokenTypesOfGroupMaker  = []TokenType{SELECT, CASE, FROM, WHERE, ORDER, GROUP, LIMIT, ANDGROUP, ORGROUP, HAVING, UNION, EXCEPT, INTERSECT, FUNCTION, STARTPARENTHESIS, TYPE, WITH}
+	TokenTypesOfGroupMaker  = []TokenType{SELECT, CASE, FROM, WHERE, ORDER, GROUP, LIMIT, AND, OR, HAVING, UNION, EXCEPT, INTERSECT, FUNCTION, STARTPARENTHESIS, TYPE, WITH}
 	TokenTypesOfJoinMaker   = []TokenType{JOIN, INNER, OUTER, LEFT, RIGHT, NATURAL, CROSS}
 	TokenTypesOfTieClause   = []TokenType{UNION, INTERSECT, EXCEPT}
 	TokenTypesOfLimitClause = []TokenType{LIMIT, FETCH, OFFSET}
@@ -186,6 +199,15 @@ var keywordMap = map[string]TokenType{
 	"UPDATE":      UPDATE,
 	"SET":         SET,
 	"RETURNING":   RETURNING,
+	"CREATE":      CREATE,
+	"ALTER":       ALTER,
+	"ADD":         ADD,
+	"RENAME":      RENAME,
+	"MODIFY":      MODIFY,
+	"COLUMN":      COLUMN,
+	"TABLE":       TABLE,
+	"TO":          TO,
+	"DROP":        DROP,
 	"DELETE":      DELETE,
 	"INSERT":      INSERT,
 	"INTO":        INTO,
@@ -214,6 +236,8 @@ var keywordMap = map[string]TokenType{
 	"AT":          AT,
 	"LOCK":        LOCK,
 	"WITH":        WITH,
+	"PRIMARY":     PRIMARY,
+	"KEY":         KEY,
 
 	/*
 	 * Data types
@@ -224,6 +248,7 @@ var keywordMap = map[string]TokenType{
 	"CHAR":       TYPE,
 	"BIT":        TYPE,
 	"TEXT":       TYPE,
+	"INT":        TYPE,
 	"INTEGER":    TYPE,
 	"NUMERIC":    TYPE,
 	"DECIMAL":    TYPE,

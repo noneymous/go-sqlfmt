@@ -4,15 +4,16 @@ import (
 	"bytes"
 )
 
-// OrGroup group formatter
-type OrGroup struct {
+// Or formatter
+type Or struct {
 	Elements    []Formatter
 	IndentLevel int
 	*Options    // Options used later to format element
+	SameLine    bool
 }
 
 // Format reindents and formats elements accordingly
-func (formatter *OrGroup) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int) error {
+func (formatter *Or) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int) error {
 
 	// Prepare short variables for better visibility
 	var INDENT = formatter.Indent
@@ -25,20 +26,26 @@ func (formatter *OrGroup) Format(buf *bytes.Buffer, parent []Formatter, parentId
 		return err
 	}
 
+	// Check if parent's first token is indicating Join
+	var isPartOfJoin = false
+	if parent != nil {
+		if t, ok := parent[0].(Token); ok {
+			if t.IsJoinStart() {
+				isPartOfJoin = true
+			}
+		}
+	}
+
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
-	var previousToken Token
 	for i, el := range elements {
 
 		// Write element or recursively call it's Format function
 		if token, ok := el.(Token); ok {
-			write(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, false)
+			writeAnd(buf, INDENT, NEWLINE, WHITESPACE, token, formatter.IndentLevel, formatter.SameLine, isPartOfJoin) // OR is not different to an AND in regard to formatting
 		} else {
-			_ = el.Format(buf, elements, i)
-		}
 
-		// Remember last Token element
-		if token, ok := el.(Token); ok {
-			previousToken = token
+			// Recursively format nested elements
+			_ = el.Format(buf, elements, i)
 		}
 	}
 
@@ -47,7 +54,7 @@ func (formatter *OrGroup) Format(buf *bytes.Buffer, parent []Formatter, parentId
 }
 
 // AddIndent increments indentation level by the given amount
-func (formatter *OrGroup) AddIndent(lev int) {
+func (formatter *Or) AddIndent(lev int) {
 	formatter.IndentLevel += lev
 
 	// Preprocess punctuation and enrich with surrounding information

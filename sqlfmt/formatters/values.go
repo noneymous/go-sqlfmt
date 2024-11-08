@@ -2,6 +2,9 @@ package formatters
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
+	"strings"
 )
 
 // Values group formatter
@@ -15,8 +18,6 @@ type Values struct {
 func (formatter *Values) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int) error {
 
 	// Prepare short variables for better visibility
-	var INDENT = formatter.Indent
-	var NEWLINE = formatter.Newline
 	var WHITESPACE = formatter.Whitespace
 
 	// Preprocess punctuation and enrich with surrounding information
@@ -26,19 +27,21 @@ func (formatter *Values) Format(buf *bytes.Buffer, parent []Formatter, parentIdx
 	}
 
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
-	var previousToken Token
 	for i, el := range elements {
 
 		// Write element or recursively call it's Format function
 		if token, ok := el.(Token); ok {
-			write(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, false)
+			formatter.WriteValues(buf, token, formatter.IndentLevel)
 		} else {
-			_ = el.Format(buf, elements, i)
-		}
 
-		// Remember last Token element
-		if token, ok := el.(Token); ok {
-			previousToken = token
+			// Break parenthesis group (list of values) into new line
+			switch v := el.(type) {
+			case *Parenthesis:
+				v.IsColumnArea = true
+			}
+
+			// Recursively format nested elements
+			_ = el.Format(buf, elements, i)
 		}
 	}
 
@@ -59,5 +62,22 @@ func (formatter *Values) AddIndent(lev int) {
 	// Iterate and increase indent of child elements too
 	for _, el := range elements {
 		el.AddIndent(lev)
+	}
+}
+
+func (formatter *Values) WriteValues(buf *bytes.Buffer, token Token, indent int) {
+
+	// Prepare short variables for better visibility
+	var INDENT = formatter.Indent
+	var NEWLINE = formatter.Newline
+	var WHITESPACE = formatter.Whitespace
+
+	switch {
+	case token.ContinueNewline():
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+	case token.Type == lexer.COMMA: // Write comma token without whitespace
+		buf.WriteString(fmt.Sprintf("%s", token.Value))
+	default:
+		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }

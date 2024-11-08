@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentSelectGroup(t *testing.T) {
+func TestReindentSelect(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string
@@ -48,7 +48,6 @@ func TestIncrementIndent(t *testing.T) {
 		Options:     options,
 		Elements:    nil,
 		IndentLevel: 0,
-		ColumnCount: 0,
 	}
 	s.AddIndent(1)
 	got := s.IndentLevel

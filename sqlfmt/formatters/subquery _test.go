@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentSubqueryGroup(t *testing.T) {
+func TestReindentSubquery(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name         string
@@ -39,7 +39,7 @@ func TestReindentSubqueryGroup(t *testing.T) {
 				},
 				Token{Options: options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}},
 			},
-			want: "\n  (\n    SELECT\n      xxxxxx\n    FROM xxxxxx\n  )",
+			want: "\n(\n  SELECT\n    xxxxxx\n  FROM xxxxxx\n)",
 		},
 		{
 			name:         "normalcase outside column area",
@@ -64,7 +64,7 @@ func TestReindentSubqueryGroup(t *testing.T) {
 				},
 				Token{Options: options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}},
 			},
-			want: "\n(\n  SELECT\n    xxxxxx\n  FROM xxxxxx\n)",
+			want: " (\n  SELECT\n    xxxxxx\n  FROM xxxxxx\n)",
 		},
 	}
 	for _, tt := range tests {

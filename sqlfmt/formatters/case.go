@@ -10,10 +10,9 @@ import (
 
 // Case group formatter
 type Case struct {
-	Elements       []Formatter
-	IndentLevel    int
-	*Options       // Options used later to format element
-	hasCommaBefore bool
+	Elements    []Formatter
+	IndentLevel int
+	*Options    // Options used later to format element
 }
 
 // Format reindents and formats elements accordingly
@@ -35,7 +34,11 @@ func (formatter *Case) Format(buf *bytes.Buffer, parent []Formatter, parentIdx i
 		if token, ok := el.(Token); ok {
 			formatter.writeCase(buf, token, formatter.IndentLevel)
 		} else {
-			el.AddIndent(2)
+
+			// Increment indent, as everything within CASE should be indented
+			el.AddIndent(1)
+
+			// Recursively format nested elements
 			_ = el.Format(buf, elements, i)
 		}
 	}
@@ -68,12 +71,11 @@ func (formatter *Case) writeCase(buf *bytes.Buffer, token Token, indent int) {
 	var WHITESPACE = formatter.Whitespace
 
 	// Write element
-
 	switch token.Type {
 	case lexer.CASE, lexer.END:
-		buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
 	case lexer.WHEN, lexer.ELSE:
-		buf.WriteString(fmt.Sprintf("%s%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, INDENT, token.Value))
+		buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
 	case lexer.COMMA:
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:

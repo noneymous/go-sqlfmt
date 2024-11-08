@@ -3,7 +3,6 @@ package formatters
 import (
 	"bytes"
 	"fmt"
-
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 

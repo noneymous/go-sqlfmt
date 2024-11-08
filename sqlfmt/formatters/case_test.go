@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentCaseGroup(t *testing.T) {
+func TestReindentCase(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string
@@ -24,7 +24,7 @@ func TestReindentCaseGroup(t *testing.T) {
 				Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "something"}},
 				Token{Options: options, Token: lexer.Token{Type: lexer.END, Value: "END"}},
 			},
-			want: "\n  CASE\n    WHEN something something\n  END",
+			want: "\nCASE\n  WHEN something something\nEND",
 		},
 	}
 	for _, tt := range tests {

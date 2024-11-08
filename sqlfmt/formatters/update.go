@@ -15,8 +15,6 @@ type Update struct {
 func (formatter *Update) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int) error {
 
 	// Prepare short variables for better visibility
-	var INDENT = formatter.Indent
-	var NEWLINE = formatter.Newline
 	var WHITESPACE = formatter.Whitespace
 
 	// Preprocess punctuation and enrich with surrounding information
@@ -26,15 +24,15 @@ func (formatter *Update) Format(buf *bytes.Buffer, parent []Formatter, parentIdx
 	}
 
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
-	columnCount := 0
-	for i, el := range separate(elements, WHITESPACE) {
-		switch v := el.(type) {
-		case Token, string:
-			if errWrite := writeWithComma(buf, INDENT, NEWLINE, WHITESPACE, v, formatter.IndentLevel, &columnCount); errWrite != nil {
-				return errWrite
-			}
-		case Formatter:
-			_ = v.Format(buf, elements, i)
+	for i, el := range elements {
+
+		// Write element or recursively call it's Format function
+		if token, ok := el.(Token); ok {
+			writeCreate(buf, WHITESPACE, token, i)
+		} else {
+
+			// Recursively format nested elements
+			_ = el.Format(buf, elements, i)
 		}
 	}
 

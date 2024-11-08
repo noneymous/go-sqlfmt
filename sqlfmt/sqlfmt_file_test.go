@@ -27,11 +27,12 @@ import (
 func sendSQL() int {
 	var id int
 	var db *sql.DB
-	db.QueryRow(` + "`" + `SELECT ANY (
-  SELECT
-    xxx
-  FROM xxx
-)
+	db.QueryRow(` + "`" + `SELECT
+  ANY (
+    SELECT
+      xxx
+    FROM xxx
+  )
 FROM xxx
 WHERE xxx
 LIMIT xxx` + "`" + `).Scan(&id)

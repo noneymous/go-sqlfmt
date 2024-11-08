@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentUnionGroup(t *testing.T) {
+func TestReindentUnion(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string

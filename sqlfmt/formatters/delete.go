@@ -15,8 +15,6 @@ type Delete struct {
 func (formatter *Delete) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int) error {
 
 	// Prepare short variables for better visibility
-	var INDENT = formatter.Indent
-	var NEWLINE = formatter.Newline
 	var WHITESPACE = formatter.Whitespace
 
 	// Preprocess punctuation and enrich with surrounding information
@@ -26,19 +24,15 @@ func (formatter *Delete) Format(buf *bytes.Buffer, parent []Formatter, parentIdx
 	}
 
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
-	var previousToken Token
 	for i, el := range elements {
 
 		// Write element or recursively call it's Format function
 		if token, ok := el.(Token); ok {
-			write(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, false)
+			writeCreate(buf, WHITESPACE, token, i)
 		} else {
-			_ = el.Format(buf, elements, i)
-		}
 
-		// Remember last Token element
-		if token, ok := el.(Token); ok {
-			previousToken = token
+			// Recursively format nested elements
+			_ = el.Format(buf, elements, i)
 		}
 	}
 

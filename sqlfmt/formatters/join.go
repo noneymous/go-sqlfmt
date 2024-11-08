@@ -28,16 +28,16 @@ func (formatter *Join) Format(buf *bytes.Buffer, parent []Formatter, parentIdx i
 	}
 
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
-	var isFirst = true
 	for i, el := range elements {
 
 		// Write element or recursively call it's Format function
 		if token, ok := el.(Token); ok {
-			formatter.writeJoin(buf, token, formatter.IndentLevel, isFirst)
+			formatter.writeJoin(buf, token, formatter.IndentLevel, i)
 		} else {
+
+			// Recursively format nested elements
 			_ = el.Format(buf, elements, i)
 		}
-		isFirst = false
 	}
 
 	// Return nil and continue with parent Formatter
@@ -60,7 +60,7 @@ func (formatter *Join) AddIndent(lev int) {
 	}
 }
 
-func (formatter *Join) writeJoin(buf *bytes.Buffer, token Token, indent int, isFirst bool) {
+func (formatter *Join) writeJoin(buf *bytes.Buffer, token Token, indent int, position int) {
 
 	// Prepare short variables for better visibility
 	var INDENT = formatter.Indent
@@ -69,11 +69,11 @@ func (formatter *Join) writeJoin(buf *bytes.Buffer, token Token, indent int, isF
 
 	// Write element
 	switch {
-	case isFirst && token.IsJoinStart():
+	case position == 0 && token.IsJoinStart():
 		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
 	case token.Type == lexer.ON || token.Type == lexer.USING:
 		buf.WriteString(fmt.Sprintf(" %s", token.Value))
-	case strings.HasPrefix(token.Value, "::"):
+	case strings.HasPrefix(token.Value, "::"): // Write cast token without whitespace
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))

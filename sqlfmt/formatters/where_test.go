@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentWhereGroup(t *testing.T) {
+func TestReindentWhere(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string

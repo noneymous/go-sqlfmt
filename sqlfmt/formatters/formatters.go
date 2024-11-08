@@ -79,14 +79,13 @@ func (formatter Token) IsJoinStart() bool {
 	return false
 }
 
-// IsKeywordInSelect returns true if token is a keyword in select group
-func (formatter Token) IsKeywordInSelect() bool {
-	return formatter.Type == lexer.SELECT || formatter.Type == lexer.EXISTS || formatter.Type == lexer.DISTINCT || formatter.Type == lexer.DISTINCTROW || formatter.Type == lexer.INTO || formatter.Type == lexer.AS || formatter.Type == lexer.GROUP || formatter.Type == lexer.ORDER || formatter.Type == lexer.BY || formatter.Type == lexer.ON || formatter.Type == lexer.RETURNING || formatter.Type == lexer.SET || formatter.Type == lexer.UPDATE || formatter.Type == lexer.ANY
-}
-
-// RequiresNewline returns true if a token requires should be moved to a new line
-func (formatter Token) RequiresNewline() bool {
-	var ttypes = []lexer.TokenType{lexer.SELECT, lexer.UPDATE, lexer.INSERT, lexer.DELETE, lexer.ANDGROUP, lexer.FROM, lexer.GROUP, lexer.ORGROUP, lexer.ORDER, lexer.HAVING, lexer.LIMIT, lexer.OFFSET, lexer.FETCH, lexer.RETURNING, lexer.SET, lexer.UNION, lexer.INTERSECT, lexer.EXCEPT, lexer.VALUES, lexer.WHERE, lexer.ON, lexer.USING, lexer.UNION, lexer.EXCEPT, lexer.INTERSECT}
+// ContinueNewline returns true if a token should be moved to a new line
+func (formatter Token) ContinueNewline() bool {
+	var ttypes = []lexer.TokenType{
+		lexer.SELECT, lexer.FROM, lexer.ON, lexer.WHERE, lexer.HAVING, lexer.GROUP, lexer.ORDER, lexer.LIMIT, lexer.OFFSET,
+		lexer.FETCH, lexer.RETURNING, lexer.USING, lexer.UNION, lexer.INTERSECT, lexer.EXCEPT, lexer.UNION,
+		lexer.CREATE, lexer.UPDATE, lexer.SET, lexer.INSERT, lexer.VALUES, lexer.DELETE, lexer.DROP,
+	}
 	for _, v := range ttypes {
 		if formatter.Type == v {
 			return true
@@ -95,124 +94,17 @@ func (formatter Token) RequiresNewline() bool {
 	return false
 }
 
-// ContinueLine should be called on the last parent token to figure out, whether a token should continue in the same line
+// ContinueLine should be called on the last parent token to see, if a token should continue in the same line
 func (formatter Token) ContinueLine() bool {
-	return formatter.IsComparator() || formatter.Type == lexer.FROM || formatter.Type == lexer.WHERE || formatter.Type == lexer.EXISTS || formatter.Type == lexer.AS || formatter.Type == lexer.IN || formatter.Type == lexer.ON || formatter.Type == lexer.ANY || formatter.Type == lexer.ARRAY
+	return formatter.IsComparator() || formatter.Type == lexer.FROM || formatter.Type == lexer.WHERE ||
+		formatter.Type == lexer.EXISTS || formatter.Type == lexer.AS || formatter.Type == lexer.IN ||
+		formatter.Type == lexer.ON || formatter.Type == lexer.ANY || formatter.Type == lexer.ARRAY ||
+		formatter.Type == lexer.AND || formatter.Type == lexer.OR
 }
 
 // IsComparator returns true if token is a comparator
 func (formatter Token) IsComparator() bool {
 	return formatter.Type == lexer.COMPARATOR
-}
-
-func write(
-	buf *bytes.Buffer, INDENT, NEWLINE, WHITESPACE string, token Token, previousToken Token, indent int, hasMany bool) {
-	switch {
-	case token.RequiresNewline():
-		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
-	case token.Type == lexer.COMMA:
-		buf.WriteString(fmt.Sprintf("%s", token.Value))
-	case token.Type == lexer.DO:
-		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, token.Value, WHITESPACE))
-	case strings.HasPrefix(token.Value, "::"):
-		buf.WriteString(fmt.Sprintf("%s", token.Value))
-	case token.Type == lexer.WITH:
-		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
-	default:
-		if hasMany {
-
-			// Use newlines as separators
-			if previousToken.RequiresNewline() || previousToken.Type == lexer.AND || previousToken.Type == lexer.OR {
-				buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
-			} else {
-				buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
-			}
-		} else {
-
-			// Use whitespaces as separators
-			buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
-		}
-	}
-}
-
-func writeWithComma(buf *bytes.Buffer, INDENT, NEWLINE, WHITESPACE string, v interface{}, indent int, columnCount *int) error {
-	if token, ok := v.(Token); ok {
-		switch {
-		case token.RequiresNewline():
-			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
-		case token.Type == lexer.BY:
-			buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
-		case token.Type == lexer.COMMA:
-			buf.WriteString(fmt.Sprintf("%s%s%s%s", token.Value, NEWLINE, strings.Repeat(INDENT, indent), INDENT))
-		default:
-			return fmt.Errorf("can not reindent %#v", token.Value)
-		}
-	} else if str, isString := v.(string); isString {
-		str = strings.TrimRight(str, " ")
-		if *(columnCount) == 0 {
-			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, str))
-		} else if strings.HasPrefix(token.Value, "::") {
-			buf.WriteString(fmt.Sprintf("%s", str))
-		} else {
-			buf.WriteString(fmt.Sprintf("%s", str))
-		}
-
-		// Update number at pointer address
-		*columnCount = *(columnCount) + 1
-	}
-	return nil
-}
-
-// separate elements by comma and the reserved word in select clause
-func separate(rs []Formatter, WHITESPACE string) []interface{} {
-	var (
-		result           []interface{}
-		skipRange, count int
-	)
-	buf := &bytes.Buffer{}
-
-	for _, r := range rs {
-		if token, ok := r.(Token); !ok {
-			if buf.String() != "" {
-				result = append(result, buf.String())
-				buf.Reset()
-			}
-			result = append(result, r)
-		} else {
-			switch {
-			case skipRange > 0:
-				skipRange--
-				// TODO: more elegant
-			case token.IsKeywordInSelect():
-				if buf.String() != "" {
-					result = append(result, buf.String())
-					buf.Reset()
-				}
-				result = append(result, token)
-			case token.Type == lexer.COMMA:
-				if buf.String() != "" {
-					result = append(result, buf.String())
-				}
-				result = append(result, token)
-				buf.Reset()
-				count = 0
-			case strings.HasPrefix(token.Value, "::"):
-				buf.WriteString(token.Value)
-			default:
-				if count == 0 {
-					buf.WriteString(token.Value)
-				} else {
-					buf.WriteString(WHITESPACE + token.Value)
-				}
-				count++
-			}
-		}
-	}
-	// append the last element in buf
-	if buf.String() != "" {
-		result = append(result, buf.String())
-	}
-	return result
 }
 
 // process bracket, single quote and brace
@@ -288,4 +180,74 @@ func extractSurroundingArea(rs []Formatter, WHITESPACE string) (string, int, err
 		}
 	}
 	return result, skipRange, nil
+}
+
+func write(
+	buf *bytes.Buffer,
+	INDENT,
+	NEWLINE,
+	WHITESPACE string,
+	token Token,
+	previousToken,
+	previousParentToken Token,
+	indent int,
+	hasMany bool,
+) {
+	switch {
+	case token.ContinueNewline() && previousParentToken.Type != lexer.DELETE:
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+	case token.Type == lexer.DO:
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, token.Value, WHITESPACE))
+	case token.Type == lexer.WITH:
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+	case token.Type == lexer.COMMA: // Write comma token without whitespace
+		buf.WriteString(fmt.Sprintf("%s", token.Value))
+	case strings.HasPrefix(token.Value, "::"): // Write cast token without whitespace
+		buf.WriteString(fmt.Sprintf("%s", token.Value))
+	default:
+		if hasMany {
+
+			// Use newlines as separators
+			if previousToken.ContinueNewline() {
+				buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+			} else if previousToken.Type == lexer.AND || previousToken.Type == lexer.OR {
+				buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+			} else {
+				buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
+			}
+		} else {
+
+			// Use whitespaces as separators
+			buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
+		}
+	}
+}
+
+func writeWithComma(
+	buf *bytes.Buffer,
+	INDENT,
+	NEWLINE,
+	WHITESPACE string,
+	token,
+	previousToken Token,
+	indent int,
+	position int,
+	hasMany bool,
+) {
+	switch {
+	case token.ContinueNewline():
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+	case token.Type == lexer.COMMA && hasMany:
+		buf.WriteString(fmt.Sprintf("%s%s%s%s", token.Value, NEWLINE, strings.Repeat(INDENT, indent), INDENT))
+	case token.Type == lexer.COMMA: // Write comma token without whitespace
+		buf.WriteString(fmt.Sprintf("%s", token.Value))
+	case position == 1 && hasMany:
+		buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
+	case previousToken.Type == lexer.COMMA && hasMany:
+		buf.WriteString(fmt.Sprintf("%s", token.Value))
+	case strings.HasPrefix(token.Value, "::"):
+		buf.WriteString(fmt.Sprintf("%s", token.Value))
+	default:
+		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
+	}
 }

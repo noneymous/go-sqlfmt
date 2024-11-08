@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentUpdateGroup(t *testing.T) {
+func TestReindentUpdate(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string
@@ -21,7 +21,7 @@ func TestReindentUpdateGroup(t *testing.T) {
 				Token{Options: options, Token: lexer.Token{Type: lexer.UPDATE, Value: "UPDATE"}},
 				Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "something1"}},
 			},
-			want: "\nUPDATE\n  something1",
+			want: "UPDATE something1",
 		},
 	}
 	for _, tt := range tests {

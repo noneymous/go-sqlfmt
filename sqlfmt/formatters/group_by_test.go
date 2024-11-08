@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentGroupByGroup(t *testing.T) {
+func TestReindentGroupBy(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string
@@ -22,7 +22,7 @@ func TestReindentGroupByGroup(t *testing.T) {
 				Token{Options: options, Token: lexer.Token{Type: lexer.BY, Value: "BY"}},
 				Token{Options: options, Token: lexer.Token{Type: lexer.IDENT, Value: "xxxxxx"}},
 			},
-			want: "\nGROUP BY\n  xxxxxx",
+			want: "\nGROUP BY xxxxxx",
 		},
 	}
 	for _, tt := range tests {

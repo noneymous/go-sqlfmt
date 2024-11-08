@@ -2,7 +2,10 @@ package formatters
 
 import (
 	"bytes"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
+
+const maxGroupClausesPerLine = 2
 
 // GroupBy group formatter
 type GroupBy struct {
@@ -25,16 +28,41 @@ func (formatter *GroupBy) Format(buf *bytes.Buffer, parent []Formatter, parentId
 		return err
 	}
 
-	// Iterate and write elements to the buffer. Recursively step into nested elements.
-	columnCount := 0
-	for i, el := range separate(elements, WHITESPACE) {
-		switch v := el.(type) {
-		case Token, string:
-			if errWrite := writeWithComma(buf, INDENT, NEWLINE, WHITESPACE, v, formatter.IndentLevel, &columnCount); errWrite != nil {
-				return errWrite
+	// Check how many clauses there are. Linebreak if too many
+	var clauses = 0 // WHERE clause starts with first clause
+	for _, el := range elements {
+		switch t := el.(type) {
+		case Token:
+			if t.Type == lexer.IDENT {
+				clauses++
 			}
-		case Formatter:
-			_ = v.Format(buf, elements, i)
+		}
+	}
+
+	// Iterate and write elements to the buffer. Recursively step into nested elements.
+	var hasMany = clauses > maxGroupClausesPerLine
+	var previousToken Token
+	for i, el := range elements {
+
+		// Write element or recursively call it's Format function
+		if token, ok := el.(Token); ok {
+			writeWithComma(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, i, hasMany)
+		} else {
+
+			// Increment indent, if GROUP clauses should be written into new lines
+			if hasMany {
+				el.AddIndent(1)
+			}
+
+			// Recursively format nested elements
+			_ = el.Format(buf, elements, i)
+		}
+
+		// Remember last Token element
+		if token, ok := el.(Token); ok {
+			previousToken = token
+		} else {
+			previousToken = Token{}
 		}
 	}
 
