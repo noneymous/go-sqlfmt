@@ -15,7 +15,7 @@ type Select struct {
 	*Options    // Options used later to format element
 }
 
-// Format reindents and formats elements accordingly
+// Format component accordingly with necessary indents, newlines,...
 func (formatter *Select) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int) error {
 
 	// Prepare short variables for better visibility

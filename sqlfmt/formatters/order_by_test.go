@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentOrderBy(t *testing.T) {
+func TestFormatOrderBy(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string

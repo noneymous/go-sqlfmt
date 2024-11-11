@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentGroupBy(t *testing.T) {
+func TestFormatGroupBy(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string

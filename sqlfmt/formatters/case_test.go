@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentCase(t *testing.T) {
+func TestFormatCase(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string

@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestReindentAnd(t *testing.T) {
+func TestFormatAnd(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string

@@ -39,7 +39,7 @@ type Token struct {
 	*Options
 }
 
-// Format reindents and formats elements accordingly
+// Format component accordingly with necessary indents, newlines,...
 func (formatter Token) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int) error {
 	return nil
 }

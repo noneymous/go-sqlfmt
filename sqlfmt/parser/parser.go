@@ -108,7 +108,7 @@ func NewParser(tokens []lexer.Token, options *formatters.Options) (*Parser, erro
 	case lexer.FUNCTION:
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfFunction}, nil
 	case lexer.TYPE:
-		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfTypeCast}, nil
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfType}, nil
 	case lexer.LOCK:
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfLock}, nil
 	case lexer.WITH:
@@ -361,7 +361,7 @@ func (r *Parser) buildFormatter() formatters.Formatter {
 	elements := r.result
 	firstElement, _ := elements[0].(formatters.Token)
 
-	// Build suitable Reintender group and return it
+	// Build suitable Formatter group and return it
 	switch firstElement.Type {
 	case lexer.SELECT:
 		return &formatters.Select{Options: r.options, Elements: elements}
@@ -444,7 +444,7 @@ func (r *Parser) buildFormatter() formatters.Formatter {
 		// End token of TYPE group (")") has to be added in the group
 		endToken := formatters.Token{Options: r.options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}}
 		elements = append(elements, endToken)
-		return &formatters.TypeCast{Options: r.options, Elements: elements}
+		return &formatters.Type{Options: r.options, Elements: elements}
 	}
 
 	// Return nil as no group could be built

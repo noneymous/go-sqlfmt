@@ -145,7 +145,7 @@ var (
 	EndOfDrop            = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfInsert          = []TokenType{SET, VALUES, EOF}
 	EndOfValues          = []TokenType{UPDATE, RETURNING, EOF}
-	EndOfTypeCast        = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfType            = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfLock            = []TokenType{EOF}
 	EndOfWith            = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfFunction        = []TokenType{ENDPARENTHESIS, EOF}

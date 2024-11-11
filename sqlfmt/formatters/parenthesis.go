@@ -17,7 +17,7 @@ type Parenthesis struct {
 	PositionInParent int
 }
 
-// Format reindents and formats elements accordingly
+// Format component accordingly with necessary indents, newlines,...
 func (formatter *Parenthesis) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int) error {
 
 	// Prepare short variables for better visibility

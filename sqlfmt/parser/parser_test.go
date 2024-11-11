@@ -73,7 +73,7 @@ func TestParse(t *testing.T) {
 								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}},
 							},
 						},
-						&formatters.TypeCast{
+						&formatters.Type{
 							Options: options,
 							Elements: []formatters.Formatter{
 								formatters.Token{Options: options, Token: lexer.Token{Type: lexer.TYPE, Value: "TEXT"}},
