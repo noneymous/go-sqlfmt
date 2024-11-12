@@ -45,6 +45,8 @@ func (formatter *Parenthesis) Format(buf *bytes.Buffer, parent []Formatter, pare
 		startSameLine = true
 	} else if previousParentToken.Type == lexer.STARTPARENTHESIS { // Nested second parenthesis should be moved to a new line and indented
 		startSameLine = false
+	} else if previousParentToken.Type == lexer.COMMENT { // Preceding comment should move parenthesis to new line and indent
+		startSameLine = false
 	} else if formatter.IsColumnArea && formatter.PositionInParent == 0 { // Parenthesis in column area in first column might be some special select clause
 		startSameLine = false
 	}
@@ -147,7 +149,7 @@ func writeParenthesis(
 		case token.Type == lexer.STARTPARENTHESIS:
 			buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 			return
-		case position == 1:
+		case position == 1 && token.Type != lexer.COMMENT:
 			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
 			return
 		case token.Type == lexer.ENDPARENTHESIS:
@@ -159,7 +161,7 @@ func writeParenthesis(
 		case token.Type == lexer.STARTPARENTHESIS:
 			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
 			return
-		case position == 1:
+		case position == 1 && token.Type != lexer.COMMENT:
 			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
 			return
 		case token.Type == lexer.ENDPARENTHESIS:
@@ -180,15 +182,26 @@ func writeParenthesis(
 		}
 	}
 
-	// Write token values
+	// Write common token values
 	switch {
+
+	// Write comma token values or subsequent one
 	case token.Type == lexer.COMMA: // Write comma token without whitespace
-		buf.WriteString(fmt.Sprintf("%s", token.Value))
-	case strings.HasPrefix(token.Value, "::"): // Write cast token without whitespace
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	case previousToken.Type == lexer.COMMA && containsTypeDefinitions:
 		buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
+
+	// Write common token values
+	case strings.HasPrefix(token.Value, "::"):
+		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:
+
+		// Move token to new line, because it cannot follow after single line comment
+		if previousToken.Type == lexer.COMMENT && strings.HasPrefix(previousToken.Value, "//") {
+			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+			return
+		}
+
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }

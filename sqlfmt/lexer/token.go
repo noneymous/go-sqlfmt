@@ -24,6 +24,7 @@ const (
 	COMMA
 	COLON
 	DOUBLECOLON
+	COMMENT
 	FUNCTION
 	FUNCTIONKEYWORD
 	STARTPARENTHESIS
@@ -122,34 +123,33 @@ const (
 
 // Define end keywords for each clause segment
 var (
-	EndOfSelect          = []TokenType{FROM, UNION, WHERE, ENDPARENTHESIS, EOF}
-	EndOfCase            = []TokenType{END, EOF}
-	EndOfFrom            = []TokenType{WHERE, INNER, OUTER, LEFT, RIGHT, JOIN, NATURAL, CROSS, ORDER, GROUP, UNION, OFFSET, LIMIT, FETCH, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
-	EndOfJoin            = []TokenType{WHERE, ORDER, GROUP, LIMIT, OFFSET, FETCH, LEFT, RIGHT, INNER, OUTER, NATURAL, CROSS, UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
-	EndOfWhere           = []TokenType{GROUP, ORDER, LIMIT, OFFSET, FETCH, UNION, EXCEPT, INTERSECT, RETURNING, ENDPARENTHESIS, EOF}
-	EndOfAnd             = []TokenType{GROUP, ORDER, LIMIT, OFFSET, FETCH, UNION, EXCEPT, INTERSECT, AND, OR, ENDPARENTHESIS, EOF}
-	EndOfOr              = []TokenType{GROUP, ORDER, LIMIT, OFFSET, FETCH, UNION, EXCEPT, INTERSECT, AND, OR, ENDPARENTHESIS, EOF}
-	EndOfGroupBy         = []TokenType{ORDER, LIMIT, FETCH, OFFSET, UNION, EXCEPT, INTERSECT, HAVING, ENDPARENTHESIS, EOF}
-	EndOfHaving          = []TokenType{LIMIT, OFFSET, FETCH, ORDER, UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
-	EndOfOrderBy         = []TokenType{LIMIT, FETCH, OFFSET, UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
-	EndOfLimitClause     = []TokenType{UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
-	EndOfParenthesis     = []TokenType{ENDPARENTHESIS, EOF}
-	EndOfTieClause       = []TokenType{SELECT, EOF}
-	EndOfUpdate          = []TokenType{WHERE, SET, RETURNING, EOF}
-	EndOfSet             = []TokenType{FROM, WHERE, RETURNING, EOF}
-	EndOfReturning       = []TokenType{EOF}
-	EndOfCreate          = []TokenType{ENDPARENTHESIS, EOF}
-	EndOfAlter           = []TokenType{ENDPARENTHESIS, EOF}
-	EndOfAdd             = []TokenType{ENDPARENTHESIS, EOF}
-	EndOfDelete          = []TokenType{ENDPARENTHESIS, EOF}
-	EndOfDrop            = []TokenType{ENDPARENTHESIS, EOF}
-	EndOfInsert          = []TokenType{SET, VALUES, EOF}
-	EndOfValues          = []TokenType{UPDATE, RETURNING, EOF}
-	EndOfType            = []TokenType{ENDPARENTHESIS, EOF}
-	EndOfLock            = []TokenType{EOF}
-	EndOfWith            = []TokenType{ENDPARENTHESIS, EOF}
-	EndOfFunction        = []TokenType{ENDPARENTHESIS, EOF}
-	EndOfFunctionKeyword []TokenType // No end types means everything is an end type
+	EndOfSelect      = []TokenType{FROM, UNION, WHERE, ENDPARENTHESIS, EOF}
+	EndOfCase        = []TokenType{END, EOF}
+	EndOfFrom        = []TokenType{WHERE, INNER, OUTER, LEFT, RIGHT, JOIN, NATURAL, CROSS, ORDER, GROUP, UNION, OFFSET, LIMIT, FETCH, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
+	EndOfJoin        = []TokenType{WHERE, ORDER, GROUP, LIMIT, OFFSET, FETCH, LEFT, RIGHT, INNER, OUTER, NATURAL, CROSS, UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
+	EndOfWhere       = []TokenType{GROUP, ORDER, LIMIT, OFFSET, FETCH, UNION, EXCEPT, INTERSECT, RETURNING, ENDPARENTHESIS, EOF}
+	EndOfAnd         = []TokenType{GROUP, ORDER, LIMIT, OFFSET, FETCH, UNION, EXCEPT, INTERSECT, AND, OR, ENDPARENTHESIS, EOF}
+	EndOfOr          = []TokenType{GROUP, ORDER, LIMIT, OFFSET, FETCH, UNION, EXCEPT, INTERSECT, AND, OR, ENDPARENTHESIS, EOF}
+	EndOfGroupBy     = []TokenType{ORDER, LIMIT, FETCH, OFFSET, UNION, EXCEPT, INTERSECT, HAVING, ENDPARENTHESIS, EOF}
+	EndOfHaving      = []TokenType{LIMIT, OFFSET, FETCH, ORDER, UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
+	EndOfOrderBy     = []TokenType{LIMIT, FETCH, OFFSET, UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
+	EndOfLimitClause = []TokenType{UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
+	EndOfParenthesis = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfTieClause   = []TokenType{SELECT, EOF}
+	EndOfUpdate      = []TokenType{WHERE, SET, RETURNING, EOF}
+	EndOfSet         = []TokenType{FROM, WHERE, RETURNING, EOF}
+	EndOfReturning   = []TokenType{EOF}
+	EndOfCreate      = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfAlter       = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfAdd         = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfDelete      = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfDrop        = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfInsert      = []TokenType{SET, VALUES, EOF}
+	EndOfValues      = []TokenType{UPDATE, RETURNING, EOF}
+	EndOfType        = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfLock        = []TokenType{EOF}
+	EndOfWith        = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfFunction    = []TokenType{ENDPARENTHESIS, EOF}
 )
 
 // Define keywords indicating certain segment groups
@@ -877,33 +877,4 @@ var punctuationMap = map[string]TokenType{
 	"}": ENDBRACKET,
 	",": COMMA,
 	":": COLON,
-}
-
-func isPunctuation(ch rune) bool {
-	_, is := punctuationMap[string(ch)]
-	return is
-}
-
-func isNewline(ch rune) bool {
-	return ch == '\n'
-}
-
-func isWhitespace(ch rune) bool {
-	return ch == ' ' || ch == '　'
-}
-
-func isTab(ch rune) bool {
-	return ch == '\t'
-}
-
-func isColon(ch rune) bool {
-	return ch == ':'
-}
-
-func isParenthesisStart(ch rune) bool {
-	return ch == '('
-}
-
-func isSingleQuote(ch rune) bool {
-	return ch == '\''
 }

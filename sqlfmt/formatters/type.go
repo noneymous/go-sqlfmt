@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
+	"strings"
 )
 
 // Type group formatter
@@ -26,9 +27,17 @@ func (formatter *Type) Format(buf *bytes.Buffer, parent []Formatter, parentIdx i
 	}
 
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
+	var previousToken Token
 	for _, el := range elements {
 		if token, ok := el.(Token); ok {
-			formatter.writeType(buf, token)
+			formatter.writeType(buf, token, previousToken, formatter.IndentLevel)
+		}
+
+		// Remember last Token element
+		if token, ok := el.(Token); ok {
+			previousToken = token
+		} else {
+			previousToken = Token{}
 		}
 	}
 
@@ -52,18 +61,33 @@ func (formatter *Type) AddIndent(lev int) {
 	}
 }
 
-func (formatter *Type) writeType(buf *bytes.Buffer, token Token) {
+func (formatter *Type) writeType(buf *bytes.Buffer, token, previousToken Token, indent int) {
 
 	// Prepare short variables for better visibility
+	var INDENT = formatter.Indent
+	var NEWLINE = formatter.Newline
 	var WHITESPACE = formatter.Whitespace
 
 	// Write element
-	switch token.Type {
-	case lexer.TYPE:
+	switch {
+	case token.Type == lexer.TYPE:
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
-	case lexer.COMMA:
-		buf.WriteString(fmt.Sprintf("%s%s", token.Value, WHITESPACE))
+
+	// Write comma token values or subsequent one
+	case token.Type == lexer.COMMA: // Write comma token without whitespace
+		buf.WriteString(fmt.Sprintf("%s", token.Value))
+
+	// Write common token values
+	case strings.HasPrefix(token.Value, "::"):
+		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:
+
+		// Move token to new line, because it cannot follow after single line comment
+		if previousToken.Type == lexer.COMMENT && strings.HasPrefix(previousToken.Value, "//") {
+			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+			return
+		}
+
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	}
 }

@@ -75,6 +75,8 @@ func (formatter *Values) WriteValues(buf *bytes.Buffer, token Token, indent int)
 	switch {
 	case token.ContinueNewline():
 		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+
+	// Write value
 	case token.Type == lexer.COMMA: // Write comma token without whitespace
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:

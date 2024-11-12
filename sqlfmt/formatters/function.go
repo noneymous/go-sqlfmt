@@ -85,12 +85,19 @@ func (formatter *Function) writeFunction(buf *bytes.Buffer, token, previousToken
 	case previousToken.Type == lexer.STARTPARENTHESIS: // Write first function value token without whitespace
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 
-	// Write token values
+	// Write common token values
 	case token.Type == lexer.COMMA: // Write comma token without whitespace
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	case strings.HasPrefix(token.Value, "::"): // Write cast token without whitespace
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:
+
+		// Move token to new line, because it cannot follow after single line comment
+		if previousToken.Type == lexer.COMMENT && strings.HasPrefix(previousToken.Value, "//") {
+			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+			return
+		}
+
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }

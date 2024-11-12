@@ -28,11 +28,12 @@ func (formatter *Case) Format(buf *bytes.Buffer, parent []Formatter, parentIdx i
 	}
 
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
+	var previousToken Token
 	for i, el := range elements {
 
 		// Write element or recursively call it's Format function
 		if token, ok := el.(Token); ok {
-			formatter.writeCase(buf, token, formatter.IndentLevel)
+			formatter.writeCase(buf, token, previousToken, formatter.IndentLevel)
 		} else {
 
 			// Increment indent, as everything within CASE should be indented
@@ -40,6 +41,13 @@ func (formatter *Case) Format(buf *bytes.Buffer, parent []Formatter, parentIdx i
 
 			// Recursively format nested elements
 			_ = el.Format(buf, elements, i)
+		}
+
+		// Remember last Token element
+		if token, ok := el.(Token); ok {
+			previousToken = token
+		} else {
+			previousToken = Token{}
 		}
 	}
 
@@ -63,7 +71,7 @@ func (formatter *Case) AddIndent(lev int) {
 	}
 }
 
-func (formatter *Case) writeCase(buf *bytes.Buffer, token Token, indent int) {
+func (formatter *Case) writeCase(buf *bytes.Buffer, token, previousToken Token, indent int) {
 
 	// Prepare short variables for better visibility
 	var INDENT = formatter.Indent
@@ -71,18 +79,25 @@ func (formatter *Case) writeCase(buf *bytes.Buffer, token Token, indent int) {
 	var WHITESPACE = formatter.Whitespace
 
 	// Write element
-	switch token.Type {
-	case lexer.CASE, lexer.END:
+	switch {
+	case token.Type == lexer.CASE || token.Type == lexer.END:
 		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
-	case lexer.WHEN, lexer.ELSE:
+	case token.Type == lexer.WHEN || token.Type == lexer.ELSE:
 		buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
-	case lexer.COMMA:
+
+	// Write common token values
+	case token.Type == lexer.COMMA:
+		buf.WriteString(fmt.Sprintf("%s", token.Value))
+	case strings.HasPrefix(token.Value, "::"):
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:
-		if strings.HasPrefix(token.Value, "::") {
-			buf.WriteString(fmt.Sprintf("%s", token.Value))
-		} else {
-			buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
+
+		// Move token to new line, because it cannot follow after single line comment
+		if previousToken.Type == lexer.COMMENT && strings.HasPrefix(previousToken.Value, "//") {
+			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+			return
 		}
+
+		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }

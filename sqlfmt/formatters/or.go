@@ -37,15 +37,23 @@ func (formatter *Or) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int
 	}
 
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
+	var previousToken Token
 	for i, el := range elements {
 
 		// Write element or recursively call it's Format function
 		if token, ok := el.(Token); ok {
-			writeAnd(buf, INDENT, NEWLINE, WHITESPACE, token, formatter.IndentLevel, formatter.SameLine, isPartOfJoin) // OR is not different to an AND in regard to formatting
+			writeAnd(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, formatter.SameLine, isPartOfJoin) // OR is not different to an AND in regard to formatting
 		} else {
 
 			// Recursively format nested elements
 			_ = el.Format(buf, elements, i)
+		}
+
+		// Remember last Token element
+		if token, ok := el.(Token); ok {
+			previousToken = token
+		} else {
+			previousToken = Token{}
 		}
 	}
 

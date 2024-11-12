@@ -3,6 +3,7 @@ package formatters
 import (
 	"bytes"
 	"fmt"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 	"strings"
 )
 
@@ -26,11 +27,12 @@ func (formatter *Insert) Format(buf *bytes.Buffer, parent []Formatter, parentIdx
 	}
 
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
+	var previousToken Token
 	for i, el := range elements {
 
 		// Write element or recursively call it's Format function
 		if token, ok := el.(Token); ok {
-			formatter.WriteInsert(buf, token, formatter.IndentLevel)
+			formatter.WriteInsert(buf, token, previousToken, formatter.IndentLevel)
 		} else {
 
 			// Break parenthesis group (list of values) into new line
@@ -41,6 +43,13 @@ func (formatter *Insert) Format(buf *bytes.Buffer, parent []Formatter, parentIdx
 
 			// Recursively format nested elements
 			_ = el.Format(buf, elements, i)
+		}
+
+		// Remember last Token element
+		if token, ok := el.(Token); ok {
+			previousToken = token
+		} else {
+			previousToken = Token{}
 		}
 	}
 
@@ -64,7 +73,7 @@ func (formatter *Insert) AddIndent(lev int) {
 	}
 }
 
-func (formatter *Insert) WriteInsert(buf *bytes.Buffer, token Token, indent int) {
+func (formatter *Insert) WriteInsert(buf *bytes.Buffer, token, previousToken Token, indent int) {
 
 	// Prepare short variables for better visibility
 	var INDENT = formatter.Indent
@@ -74,7 +83,16 @@ func (formatter *Insert) WriteInsert(buf *bytes.Buffer, token Token, indent int)
 	switch {
 	case token.ContinueNewline():
 		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+
+	// Write common token values
 	default:
+
+		// Move token to new line, because it cannot follow after single line comment
+		if previousToken.Type == lexer.COMMENT && strings.HasPrefix(previousToken.Value, "//") {
+			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+			return
+		}
+
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }

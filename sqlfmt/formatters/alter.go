@@ -15,6 +15,8 @@ type Alter struct {
 func (formatter *Alter) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int) error {
 
 	// Prepare short variables for better visibility
+	var INDENT = formatter.Indent
+	var NEWLINE = formatter.Newline
 	var WHITESPACE = formatter.Whitespace
 
 	// Preprocess punctuation and enrich with surrounding information
@@ -24,11 +26,12 @@ func (formatter *Alter) Format(buf *bytes.Buffer, parent []Formatter, parentIdx 
 	}
 
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
+	var previousToken Token
 	for i, el := range elements {
 
 		// Write element or recursively call it's Format function
 		if token, ok := el.(Token); ok {
-			writeCreate(buf, WHITESPACE, token, i)
+			writeCreate(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, i)
 		} else {
 
 			// In some CREATE cases sub queries don't need to be put in between parentheses,
@@ -42,6 +45,13 @@ func (formatter *Alter) Format(buf *bytes.Buffer, parent []Formatter, parentIdx 
 
 			// Recursively format nested elements
 			_ = el.Format(buf, elements, i)
+		}
+
+		// Remember last Token element
+		if token, ok := el.(Token); ok {
+			previousToken = token
+		} else {
+			previousToken = Token{}
 		}
 	}
 

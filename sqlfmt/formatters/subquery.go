@@ -41,6 +41,8 @@ func (formatter *Subquery) Format(buf *bytes.Buffer, parent []Formatter, parentI
 		startSameLine = true
 	} else if previousParentToken.Type == lexer.STARTPARENTHESIS { // Nested second parenthesis should be moved to a new line and indented
 		startSameLine = false
+	} else if previousParentToken.Type == lexer.COMMENT { // Preceding comment should move parenthesis to new line and indent
+		startSameLine = false
 	} else if formatter.IsColumnArea { // Subqueries in SELECT columns should be moved to a new line
 		startSameLine = false
 	}

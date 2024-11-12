@@ -200,14 +200,22 @@ func write(
 		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, token.Value, WHITESPACE))
 	case token.Type == lexer.WITH:
 		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+
+	// Write common token values
 	case token.Type == lexer.COMMA: // Write comma token without whitespace
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
-	case strings.HasPrefix(token.Value, "::"): // Write cast token without whitespace
+	case strings.HasPrefix(token.Value, "::"):
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:
-		if hasMany {
 
-			// Use newlines as separators
+		// Move token to new line, because it cannot follow after single line comment
+		if previousToken.Type == lexer.COMMENT && strings.HasPrefix(previousToken.Value, "//") {
+			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+			return
+		}
+
+		// Use newlines as separators
+		if hasMany {
 			if previousToken.ContinueNewline() {
 				buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
 			} else if previousToken.Type == lexer.AND || previousToken.Type == lexer.OR {
@@ -215,11 +223,10 @@ func write(
 			} else {
 				buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 			}
-		} else {
-
-			// Use whitespaces as separators
-			buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
+			return
 		}
+
+		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }
 
@@ -237,17 +244,26 @@ func writeWithComma(
 	switch {
 	case token.ContinueNewline():
 		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
-	case token.Type == lexer.COMMA && hasMany:
-		buf.WriteString(fmt.Sprintf("%s%s%s%s", token.Value, NEWLINE, strings.Repeat(INDENT, indent), INDENT))
+	case position == 1 && hasMany && token.Type != lexer.COMMENT:
+		buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
+
+	// Write comma token values or subsequent one
 	case token.Type == lexer.COMMA: // Write comma token without whitespace
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
-	case position == 1 && hasMany:
+	case previousToken.Type == lexer.COMMA && hasMany && token.Type != lexer.COMMENT:
 		buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
-	case previousToken.Type == lexer.COMMA && hasMany:
-		buf.WriteString(fmt.Sprintf("%s", token.Value))
+
+	// Write common token values
 	case strings.HasPrefix(token.Value, "::"):
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:
+
+		// Move token to new line, because it cannot follow after single line comment
+		if previousToken.Type == lexer.COMMENT {
+			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
+			return
+		}
+
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }

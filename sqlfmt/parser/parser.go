@@ -103,8 +103,6 @@ func NewParser(tokens []lexer.Token, options *formatters.Options) (*Parser, erro
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfInsert}, nil
 	case lexer.VALUES:
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfValues}, nil
-	case lexer.FUNCTIONKEYWORD:
-		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfFunctionKeyword}, nil
 	case lexer.FUNCTION:
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfFunction}, nil
 	case lexer.TYPE:
@@ -258,6 +256,13 @@ func (r *Parser) parseSegment() (int, error) {
 
 // hasEndType determines if the Parser's token sequence includes a suitable and expected end token type
 func (r *Parser) hasEndType() bool {
+
+	// Return true if there are no end types defined, meaning that anything is an end type
+	if len(r.endTypes) == 0 {
+		return true
+	}
+
+	// Check if end type is contained
 	for _, token := range r.tokens {
 		for _, ttype := range r.endTypes {
 			if token.Type == ttype {
@@ -265,6 +270,8 @@ func (r *Parser) hasEndType() bool {
 			}
 		}
 	}
+
+	// Return false if end type is missing
 	return false
 }
 

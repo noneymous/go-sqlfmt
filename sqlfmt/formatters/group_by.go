@@ -29,12 +29,14 @@ func (formatter *GroupBy) Format(buf *bytes.Buffer, parent []Formatter, parentId
 	}
 
 	// Check how many clauses there are. Linebreak if too many
-	var clauses = 0 // WHERE clause starts with first clause
+	var clauses = 0
 	for _, el := range elements {
 		switch t := el.(type) {
 		case Token:
 			if t.Type == lexer.IDENT {
 				clauses++
+			} else if t.Type == lexer.COMMENT {
+				clauses = 999 // Format like if there were many clauses to make space for comments
 			}
 		}
 	}
@@ -46,7 +48,7 @@ func (formatter *GroupBy) Format(buf *bytes.Buffer, parent []Formatter, parentId
 
 		// Write element or recursively call it's Format function
 		if token, ok := el.(Token); ok {
-			writeWithComma(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, i, hasMany)
+			writeWithComma(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, i-1, hasMany) // -1 because ORDER is always followed by 'BY'
 		} else {
 
 			// Increment indent, if GROUP clauses should be written into new lines

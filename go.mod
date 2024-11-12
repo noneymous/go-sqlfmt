@@ -1,13 +1,11 @@
 module github.com/noneymous/go-sqlfmt
 
-go 1.22.0
-
-toolchain go1.23.2
+go 1.20
 
 require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/stretchr/testify v1.6.1
-	golang.org/x/tools v0.26.0
+	golang.org/x/tools v0.24.0
 )
 
 require (

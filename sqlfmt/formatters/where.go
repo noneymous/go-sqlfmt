@@ -31,9 +31,15 @@ func (formatter *Where) Format(buf *bytes.Buffer, parent []Formatter, parentIdx 
 	}
 
 	// Check how many clauses there are. Linebreak if too many
-	var clauses = 1 // WHERE clause starts with first clause
+	var clauses = 1 // Segment clause starts with first clause
 	for _, el := range elements {
-		switch el.(type) {
+		switch t := el.(type) {
+		case Token:
+			if len(t.Value) > 40 { // Write one per line if one of the clauses is overly long
+				clauses = 999 // Format like if there were many clauses to make space for long values
+			} else if t.Type == lexer.COMMENT {
+				clauses = 999 // Format like if there were many clauses to make space for comments
+			}
 		case *And:
 			clauses++
 		case *Or:
@@ -43,11 +49,12 @@ func (formatter *Where) Format(buf *bytes.Buffer, parent []Formatter, parentIdx 
 
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
 	var hasMany = clauses > maxWhereClausesPerLine
+	var previousToken Token
 	for i, el := range elements {
 
 		// Write element or recursively call it's Format function
 		if token, ok := el.(Token); ok {
-			writeWhere(buf, INDENT, NEWLINE, WHITESPACE, token, formatter.IndentLevel, i, hasMany)
+			writeWhere(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, i, hasMany)
 		} else {
 
 			// Set peripheral parameters to tell child elements to write to the same line
@@ -67,6 +74,13 @@ func (formatter *Where) Format(buf *bytes.Buffer, parent []Formatter, parentIdx 
 
 			// Recursively format nested elements
 			_ = el.Format(buf, elements, i)
+		}
+
+		// Remember last Token element
+		if token, ok := el.(Token); ok {
+			previousToken = token
+		} else {
+			previousToken = Token{}
 		}
 	}
 
@@ -95,7 +109,8 @@ func writeWhere(
 	INDENT,
 	NEWLINE,
 	WHITESPACE string,
-	token Token,
+	token,
+	previousToken Token,
 	indent,
 	position int,
 	hasMany bool,
@@ -109,7 +124,7 @@ func writeWhere(
 	// Move each clause into a new line if there are many causes
 	if hasMany {
 		switch {
-		case position == 1: // First element of first clause
+		case position == 1 && token.Type != lexer.COMMENT: // First element of first clause
 			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
 			return
 
@@ -121,10 +136,18 @@ func writeWhere(
 
 	// Print to same line with WHITESPACE
 	switch {
-	case strings.HasPrefix(token.Value, "::"): // Write cast token without whitespace
+
+	// Write common token values
+	case strings.HasPrefix(token.Value, "::"):
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
-		return
 	default:
+
+		// Move token to new line, because it cannot follow after single line comment
+		if previousToken.Type == lexer.COMMENT {
+			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
+			return
+		}
+
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 		return
 	}

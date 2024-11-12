@@ -661,13 +661,6 @@ FROM "table"`,
   xxxx,
   --comment xxxx`,
 		},
-		{
-			name: "select with multi line comment",
-			sql:  `select xxxx, /* comment */ xxxx`,
-			want: `SELECT
-  xxxx,
-  /* comment */ xxxx`,
-		},
 
 		/*
 		 * INSERT query
@@ -866,6 +859,133 @@ WHERE
 			name: "DROP TABLE",
 			sql:  `DROP TABLE Customers`,
 			want: `DROP TABLE Customers`,
+		},
+
+		/*
+		 * Comment variations
+		 */
+		{
+			name: "Comment in simple select",
+			sql:  `select xxxx, /* comment */ xxxx`,
+			want: `SELECT
+  xxxx, /* comment */
+  xxxx`,
+		},
+		{
+			name: "Comment variations",
+			sql: `SELECT
+  col1, // The first column
+  col2, /* The second column */
+  col3 /* Column in between */,
+  col4
+FROM (
+  SELECT DISTINCT // This is a test one-line comment
+    * 
+  FROM table1 // This defines the table
+  WHERE // This is a where clause
+    // This is a where clause
+    col1 > 0
+    /* 
+     * It starts with some comments
+     */
+    AND col2 != ""
+    AND col4 /* important */ = 2
+  ORDER BY col1, col2 DESC // Sort by those clauses
+) t2
+WHERE a = 1 /* first clause */ AND b = 2 // second clause
+ORDER BY col1 DESC, col2 ASC /* Final comment.
+                                Multi line.
+                                Multi multi. */`,
+			want: `SELECT
+  col1, // The first column
+  col2, /* The second column */
+  col3 /* Column in between */,
+  col4
+FROM (
+  SELECT DISTINCT // This is a test one-line comment
+    *
+  FROM table1 // This defines the table
+  WHERE // This is a where clause
+    // This is a where clause
+    col1 > 0 /* 
+     * It starts with some comments
+     */
+    AND col2 != ""
+    AND col4 /* important */ = 2
+  ORDER BY
+    col1,
+    col2 DESC // Sort by those clauses
+) t2
+WHERE
+  a = 1 /* first clause */
+  AND b = 2 // second clause
+ORDER BY
+  col1 DESC,
+  col2 ASC /* Final comment.
+                                Multi line.
+                                Multi multi. */`,
+		},
+		{
+			name: "Comment outside SELECT/WHERE",
+			sql: `select xxx from yyy where a = 1 order by
+  col1, // important column
+  col2`,
+			want: `SELECT
+  xxx
+FROM yyy
+WHERE a = 1
+ORDER BY
+  col1, // important column
+  col2`,
+		},
+		{
+			name: "Comment in all lines",
+			sql: `select // comment line 1
+  max(*), // comment line 2
+  sum(*), // comment line 3
+  col1, // comment line 4
+  col2, // comment line 5
+  ( // comment line 6
+    select // comment line 7
+      1 // comment line 8
+  ) // comment line 9
+from ( // comment line 10
+  select // comment line 11
+    * // comment line 12
+  from tble // comment line 13
+) // comment line 14
+where // comment line 15
+  col1 = 2 // comment line 16
+group by // comment line 17
+  col1, // comment line 18
+  col2, // comment line 19
+order by // comment line 20
+  col1, // comment line 21
+  col2 // comment line 22
+limit 1 // comment line 23`,
+			want: `SELECT // comment line 1
+  MAX(*), // comment line 2
+  SUM(*), // comment line 3
+  col1, // comment line 4
+  col2, // comment line 5
+  ( // comment line 6
+    SELECT // comment line 7
+      1 // comment line 8
+  ) // comment line 9
+FROM ( // comment line 10
+  SELECT // comment line 11
+    * // comment line 12
+  FROM tble // comment line 13
+) // comment line 14
+WHERE // comment line 15
+  col1 = 2 // comment line 16
+GROUP BY // comment line 17
+  col1, // comment line 18
+  col2, // comment line 19
+ORDER BY // comment line 20
+  col1, // comment line 21
+  col2 // comment line 22
+LIMIT 1 // comment line 23`,
 		},
 
 		/*

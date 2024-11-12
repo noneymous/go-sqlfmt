@@ -40,15 +40,23 @@ func (formatter *And) Format(buf *bytes.Buffer, parent []Formatter, parentIdx in
 	}
 
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
+	var previousToken Token
 	for i, el := range elements {
 
 		// Write element or recursively call it's Format function
 		if token, ok := el.(Token); ok {
-			writeAnd(buf, INDENT, NEWLINE, WHITESPACE, token, formatter.IndentLevel, formatter.SameLine, isPartOfJoin)
+			writeAnd(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, formatter.SameLine, isPartOfJoin)
 		} else {
 
 			// Recursively format nested elements
 			_ = el.Format(buf, elements, i)
+		}
+
+		// Remember last Token element
+		if token, ok := el.(Token); ok {
+			previousToken = token
+		} else {
+			previousToken = Token{}
 		}
 	}
 
@@ -77,7 +85,8 @@ func writeAnd(
 	INDENT,
 	NEWLINE,
 	WHITESPACE string,
-	token Token,
+	token,
+	previousToken Token,
 	indent int,
 	sameLine bool,
 	isPartOfJoin bool,
@@ -91,7 +100,16 @@ func writeAnd(
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	case token.Type == lexer.AND || token.Type == lexer.OR: // Start of where clause
 		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+
+	// Write common token values
 	default:
+
+		// Move token to new line, because it cannot follow after single line comment
+		if previousToken.Type == lexer.COMMENT && strings.HasPrefix(previousToken.Value, "//") {
+			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+			return
+		}
+
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }

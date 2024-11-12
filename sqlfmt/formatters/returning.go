@@ -29,12 +29,14 @@ func (formatter *Returning) Format(buf *bytes.Buffer, parent []Formatter, parent
 	}
 
 	// Check how many clauses there are. Linebreak if too many
-	var clauses = 0 // WHERE clause starts with first clause
+	var clauses = 0
 	for _, el := range elements {
 		switch t := el.(type) {
 		case Token:
 			if t.Type == lexer.IDENT {
 				clauses++
+			} else if t.Type == lexer.COMMENT {
+				clauses = 999 // Format like if there were many clauses to make space for comments
 			}
 		}
 	}
