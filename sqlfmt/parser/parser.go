@@ -183,7 +183,7 @@ func (r *Parser) parseSegment() (int, error) {
 
 		// Abort if no end token could be found and to prevent out-of-bound panics. Query might not be valid SQL.
 		if idx >= len(r.tokens) {
-			return 0, fmt.Errorf("could not find end token for token sequence")
+			return 0, fmt.Errorf("could not find end token for '%s' token sequence", r.tokens[0].Value)
 		}
 
 		// Get reference of token to analyze
@@ -307,6 +307,7 @@ func (r *Parser) isEndToken(idx int) bool {
 func (r *Parser) isNewSegment(idx int) bool {
 
 	// Get tokens to work with
+	tokenFirst := r.tokens[0]
 	tokenCurrent := r.tokens[idx]
 	tokenPrevious := r.tokens[idx-1] // isNewSegment() is only called if idx > 0
 	tokenNext := r.tokens[idx+1]     // There will always be an EOF token at the end
@@ -327,6 +328,11 @@ func (r *Parser) isNewSegment(idx int) bool {
 
 	// Not a new segment, if type call, as indicated by subsequent parenthesis
 	if tokenCurrent.Type == lexer.TYPE && tokenNext.Type != lexer.STARTPARENTHESIS {
+		return false
+	}
+
+	// Not a new segment, if AND/OR within CASE
+	if tokenFirst.Type == lexer.CASE && (tokenCurrent.Type == lexer.AND || tokenCurrent.Type == lexer.OR) {
 		return false
 	}
 
