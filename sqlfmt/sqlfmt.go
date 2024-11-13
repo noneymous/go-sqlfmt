@@ -72,9 +72,29 @@ func addPadding(s string, leftPadding string) string {
 // compare compares a formatted SQL string with the original input and checks whether they are logically still the same.
 func compare(sql string, formattedSql string) bool {
 
+	// removeComments removes one-line comments to make sure their formatting did not manipulate semantics,
+	// e.g. by putting a part of the SQL query at the end of a one-line comment where it would be ignored.
+	removeComments := func(str string) string {
+		var strNew string
+		var skip bool
+		for i, c := range str {
+			if c == '/' && len(str) > i+1 && str[i+1] == '/' {
+				skip = true
+				continue
+			}
+			if skip && c == '\n' {
+				skip = false
+			}
+			if !skip {
+				strNew += string(c)
+			}
+		}
+		return strNew
+	}
+
 	// Unify inputs
-	before := removeSymbols(sql)
-	after := removeSymbols(formattedSql)
+	before := removeSymbols(removeComments(sql))
+	after := removeSymbols(removeComments(formattedSql))
 
 	// Compare strings
 	if v := strings.Compare(before, after); v != 0 {
