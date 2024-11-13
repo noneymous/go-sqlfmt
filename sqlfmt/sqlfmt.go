@@ -42,13 +42,30 @@ func Format(sql string, options *formatters.Options) (string, error) {
 	}
 
 	// Safety check, compare if formatted query still has the same logic as input
-	if !compare(sql, sqlFormatted) {
+	if !CompareSemantic(sql, sqlFormatted) {
 		fmt.Println(sqlFormatted)
 		return "", fmt.Errorf("formatted result does not match input semantically")
 	}
 
 	// Return successfully formatted SQL string
 	return sqlFormatted, nil
+}
+
+// CompareSemantic compares a formatted SQL string with the original input and checks whether they are
+// logically still the same.
+func CompareSemantic(sql string, formattedSql string) bool {
+
+	// Unify inputs
+	before := removeSymbols(removeComments(sql))
+	after := removeSymbols(removeComments(formattedSql))
+
+	// CompareSemantic strings
+	if v := strings.Compare(before, after); v != 0 {
+		return false
+	}
+
+	// Return true if strings were equal
+	return true
 }
 
 // addPadding adds desired left-side padding to each line of the string
@@ -69,40 +86,24 @@ func addPadding(s string, leftPadding string) string {
 	return strings.Join(result, "\n")
 }
 
-// compare compares a formatted SQL string with the original input and checks whether they are logically still the same.
-func compare(sql string, formattedSql string) bool {
-
-	// removeComments removes one-line comments to make sure their formatting did not manipulate semantics,
-	// e.g. by putting a part of the SQL query at the end of a one-line comment where it would be ignored.
-	removeComments := func(str string) string {
-		var strNew string
-		var skip bool
-		for i, c := range str {
-			if c == '/' && len(str) > i+1 && str[i+1] == '/' {
-				skip = true
-				continue
-			}
-			if skip && c == '\n' {
-				skip = false
-			}
-			if !skip {
-				strNew += string(c)
-			}
+// removeComments removes one-line comments to make sure their formatting did not manipulate semantics,
+// e.g. by putting a part of the SQL query at the end of a one-line comment where it would be ignored.
+func removeComments(str string) string {
+	var strNew string
+	var skip bool
+	for i, c := range str {
+		if c == '/' && len(str) > i+1 && str[i+1] == '/' {
+			skip = true
+			continue
 		}
-		return strNew
+		if skip && c == '\n' {
+			skip = false
+		}
+		if !skip {
+			strNew += string(c)
+		}
 	}
-
-	// Unify inputs
-	before := removeSymbols(removeComments(sql))
-	after := removeSymbols(removeComments(formattedSql))
-
-	// Compare strings
-	if v := strings.Compare(before, after); v != 0 {
-		return false
-	}
-
-	// Return true if strings were equal
-	return true
+	return strNew
 }
 
 // removeSymbols removes semantically unnecessary characters, such as whitespaces, tabs and newlines, for comparison

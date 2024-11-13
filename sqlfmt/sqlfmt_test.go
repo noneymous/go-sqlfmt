@@ -1013,7 +1013,7 @@ LIMIT 1 // comment line 23`,
 	}
 }
 
-func TestCompare(t *testing.T) {
+func TestCompareSemantic(t *testing.T) {
 	test := struct {
 		before string
 		after  string
@@ -1023,7 +1023,7 @@ func TestCompare(t *testing.T) {
 		after:  "select\n  *\nFROM xxx",
 		want:   true,
 	}
-	if got := compare(test.before, test.after); got != test.want {
+	if got := CompareSemantic(test.before, test.after); got != test.want {
 		t.Errorf("want %v#v got %#v", test.want, got)
 	}
 }
