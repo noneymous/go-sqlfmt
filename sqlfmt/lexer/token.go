@@ -150,6 +150,7 @@ var (
 	EndOfLock        = []TokenType{EOF}
 	EndOfWith        = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfFunction    = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfComment     []TokenType // Empty slice means anything is end token
 )
 
 // Define keywords indicating certain segment groups

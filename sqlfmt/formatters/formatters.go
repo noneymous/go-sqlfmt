@@ -41,6 +41,7 @@ type Token struct {
 
 // Format component accordingly with necessary indents, newlines,...
 func (formatter Token) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int) error {
+	buf.WriteString(fmt.Sprintf("%s", formatter.Value))
 	return nil
 }
 

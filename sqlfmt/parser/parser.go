@@ -12,8 +12,16 @@ const joinStartRange = 3
 // Each Formatter is a logical segment of an SQL query. It may also be a group of such.
 func Parse(tokens []lexer.Token, options *formatters.Options) ([]formatters.Formatter, error) {
 
+	// Get first none-comment token
+	var t lexer.TokenType
+	for _, token := range tokens {
+		if token.Type != lexer.COMMENT {
+			t = token.Type
+			break
+		}
+	}
+
 	// Check if tokenized string is actually an SQL query
-	t := tokens[0].Type
 	if !(t == lexer.SELECT || t == lexer.UPDATE || t == lexer.DELETE || t == lexer.DROP || t == lexer.CREATE ||
 		t == lexer.INSERT || t == lexer.ALTER || t == lexer.LOCK || t == lexer.WITH || t == lexer.SET) {
 		return nil, fmt.Errorf("invalid sql statement")
@@ -57,6 +65,8 @@ func NewParser(tokens []lexer.Token, options *formatters.Options) (*Parser, erro
 	// Create initial Parser with according type, tokens and end types
 	firstTokenType := tokens[0].Type
 	switch firstTokenType {
+	case lexer.COMMENT: // Just in case SQL query starts with comment. Otherwise, comment wouldn't be first token.
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfComment}, nil
 	case lexer.SELECT:
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfSelect}, nil
 	case lexer.FROM:
@@ -376,6 +386,13 @@ func (r *Parser) buildFormatter() formatters.Formatter {
 
 	// Build suitable Formatter group and return it
 	switch firstElement.Type {
+	case lexer.COMMENT: // Just in case first element of SQL string is query.
+		// Otherwise, comment is just a normal token within a series of elements of another formatter
+		return &formatters.Token{Options: r.options, Token: lexer.Token{
+			Type:  firstElement.Type,
+			Value: firstElement.Value,
+		},
+		}
 	case lexer.SELECT:
 		return &formatters.Select{Options: r.options, Elements: elements}
 	case lexer.FROM:
