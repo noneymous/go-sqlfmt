@@ -2,21 +2,23 @@ package formatters
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
+	"strings"
 )
 
-// Drop group formatter
-type Drop struct {
+// Generic group formatter
+// The generic group formatter can be applied if no special formatting rules are required
+type Generic struct {
 	Elements    []Formatter
 	IndentLevel int
 	*Options    // Options used later to format element
 }
 
 // Format component accordingly with necessary indents, newlines,...
-func (formatter *Drop) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int) error {
+func (formatter *Generic) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int) error {
 
 	// Prepare short variables for better visibility
-	var INDENT = formatter.Indent
-	var NEWLINE = formatter.Newline
 	var WHITESPACE = formatter.Whitespace
 
 	// Preprocess punctuation and enrich with surrounding information
@@ -31,8 +33,16 @@ func (formatter *Drop) Format(buf *bytes.Buffer, parent []Formatter, parentIdx i
 
 		// Write element or recursively call it's Format function
 		if token, ok := el.(Token); ok {
-			writeCreate(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, i)
+			formatter.write(buf, token, previousToken, formatter.IndentLevel, i)
 		} else {
+
+			// Set peripheral parameters to tell child elements to write to the same line
+			switch v := el.(type) {
+			case *Or:
+				v.SameLine = true
+			case *And:
+				v.SameLine = true
+			}
 
 			// Recursively format nested elements
 			_ = el.Format(buf, elements, i)
@@ -51,7 +61,7 @@ func (formatter *Drop) Format(buf *bytes.Buffer, parent []Formatter, parentIdx i
 }
 
 // AddIndent increments indentation level by the given amount
-func (formatter *Drop) AddIndent(lev int) {
+func (formatter *Generic) AddIndent(lev int) {
 	formatter.IndentLevel += lev
 
 	// Preprocess punctuation and enrich with surrounding information
@@ -63,5 +73,30 @@ func (formatter *Drop) AddIndent(lev int) {
 	// Iterate and increase indent of child elements too
 	for _, el := range elements {
 		el.AddIndent(lev)
+	}
+}
+
+func (formatter *Generic) write(buf *bytes.Buffer, token, previousToken Token, indent, position int) {
+
+	// Prepare short variables for better visibility
+	var INDENT = formatter.Indent
+	var NEWLINE = formatter.Newline
+	var WHITESPACE = formatter.Whitespace
+
+	// Write element
+	switch {
+	case position == 0:
+		buf.WriteString(fmt.Sprintf("%s", token.Value))
+
+	// Write common token values
+	default:
+
+		// Move token to new line, because it cannot follow after single line comment
+		if previousToken.Type == lexer.COMMENT && strings.HasPrefix(previousToken.Value, "//") {
+			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+			return
+		}
+
+		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }

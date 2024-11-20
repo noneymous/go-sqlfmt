@@ -33,7 +33,6 @@ const (
 	ENDBRACKET
 	STARTBRACE
 	ENDBRACE
-	QUOTEAREA
 	COMPARATOR
 	SURROUNDING
 	TYPE
@@ -63,6 +62,7 @@ const (
 	IS
 	LIKE
 	ILIKE
+	IF
 	NOT
 	NULL
 	CASE
@@ -88,6 +88,7 @@ const (
 	MODIFY
 	COLUMN
 	TABLE
+	DATABASE
 	TO
 	DELETE
 	DROP
@@ -99,7 +100,6 @@ const (
 	FILTER
 	WITHIN
 	COLLATE
-	INTERVAL
 	INTERSECT
 	EXCEPT
 	OFFSET
@@ -119,6 +119,14 @@ const (
 	WITH
 	PRIMARY
 	KEY
+
+	SHOW
+	DISCARD
+	BEGIN
+	SAVEPOINT
+	RELEASE
+	ROLLBACK
+	COMMIT
 )
 
 // Define end keywords for each clause segment
@@ -150,6 +158,12 @@ var (
 	EndOfLock        = []TokenType{EOF}
 	EndOfWith        = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfFunction    = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfShow        = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfDiscard     = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfBegin       = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfSavepoint   = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfRollback    = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfCommit      = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfComment     []TokenType // Empty slice means anything is end token
 )
 
@@ -181,12 +195,14 @@ var keywordMap = map[string]TokenType{
 	"DESC":        DESC,
 	"ASC":         ASC,
 	"LIMIT":       LIMIT,
+	"OVER":        OVER,
 	"AND":         AND,
 	"OR":          OR,
 	"IN":          IN,
 	"ANY":         ANY,
 	"ARRAY":       ARRAY,
 	"IS":          IS,
+	"IF":          IF,
 	"NOT":         NOT,
 	"NULL":        NULL,
 	"DISTINCT":    DISTINCT,
@@ -207,6 +223,7 @@ var keywordMap = map[string]TokenType{
 	"MODIFY":      MODIFY,
 	"COLUMN":      COLUMN,
 	"TABLE":       TABLE,
+	"DATABASE":    DATABASE,
 	"TO":          TO,
 	"DROP":        DROP,
 	"DELETE":      DELETE,
@@ -239,6 +256,17 @@ var keywordMap = map[string]TokenType{
 	"WITH":        WITH,
 	"PRIMARY":     PRIMARY,
 	"KEY":         KEY,
+
+	/*
+	 * Special queries
+	 */
+	"SHOW":      SHOW,
+	"DISCARD":   DISCARD,
+	"BEGIN":     BEGIN,
+	"SAVEPOINT": SAVEPOINT,
+	"RELEASE":   RELEASE,
+	"ROLLBACK":  ROLLBACK,
+	"COMMIT":    COMMIT,
 
 	/*
 	 * Data types

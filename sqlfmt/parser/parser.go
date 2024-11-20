@@ -23,7 +23,9 @@ func Parse(tokens []lexer.Token, options *formatters.Options) ([]formatters.Form
 
 	// Check if tokenized string is actually an SQL query
 	if !(t == lexer.SELECT || t == lexer.UPDATE || t == lexer.DELETE || t == lexer.DROP || t == lexer.CREATE ||
-		t == lexer.INSERT || t == lexer.ALTER || t == lexer.LOCK || t == lexer.WITH || t == lexer.SET) {
+		t == lexer.INSERT || t == lexer.ALTER || t == lexer.LOCK || t == lexer.WITH || t == lexer.SET ||
+		t == lexer.SHOW || t == lexer.DISCARD || t == lexer.BEGIN || t == lexer.SAVEPOINT || t == lexer.RELEASE ||
+		t == lexer.ROLLBACK || t == lexer.COMMIT) {
 		return nil, fmt.Errorf("invalid sql statement")
 	}
 
@@ -103,8 +105,6 @@ func NewParser(tokens []lexer.Token, options *formatters.Options) (*Parser, erro
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfCreate}, nil
 	case lexer.ALTER:
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfAlter}, nil
-	case lexer.ADD:
-		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfAdd}, nil
 	case lexer.DELETE:
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfDelete}, nil
 	case lexer.DROP:
@@ -121,6 +121,20 @@ func NewParser(tokens []lexer.Token, options *formatters.Options) (*Parser, erro
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfLock}, nil
 	case lexer.WITH:
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfWith}, nil
+	case lexer.SHOW:
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfShow}, nil
+	case lexer.DISCARD:
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfDiscard}, nil
+	case lexer.BEGIN:
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfBegin}, nil
+	case lexer.SAVEPOINT:
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfSavepoint}, nil
+	case lexer.RELEASE:
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfSavepoint}, nil
+	case lexer.ROLLBACK:
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfRollback}, nil
+	case lexer.COMMIT:
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfCommit}, nil
 	default:
 		return nil, fmt.Errorf("invalid start token '%s'", tokens[0].Value)
 	}
@@ -415,8 +429,6 @@ func (r *Parser) buildFormatter() formatters.Formatter {
 		return &formatters.Limit{Options: r.options, Elements: elements}
 	case lexer.UNION, lexer.INTERSECT, lexer.EXCEPT:
 		return &formatters.TieGroup{Options: r.options, Elements: elements}
-	case lexer.UPDATE:
-		return &formatters.Update{Options: r.options, Elements: elements}
 	case lexer.SET:
 		return &formatters.Set{Options: r.options, Elements: elements}
 	case lexer.RETURNING:
@@ -427,16 +439,6 @@ func (r *Parser) buildFormatter() formatters.Formatter {
 		return &formatters.Insert{Options: r.options, Elements: elements}
 	case lexer.VALUES:
 		return &formatters.Values{Options: r.options, Elements: elements}
-	case lexer.ALTER:
-		return &formatters.Alter{Options: r.options, Elements: elements}
-	case lexer.ADD:
-		return &formatters.Alter{Options: r.options, Elements: elements}
-	case lexer.DELETE:
-		return &formatters.Delete{Options: r.options, Elements: elements}
-	case lexer.DROP:
-		return &formatters.Delete{Options: r.options, Elements: elements}
-	case lexer.CREATE:
-		return &formatters.Create{Options: r.options, Elements: elements}
 	case lexer.WITH:
 		return &formatters.With{Options: r.options, Elements: elements}
 	case lexer.CASE:
@@ -475,6 +477,10 @@ func (r *Parser) buildFormatter() formatters.Formatter {
 		endToken := formatters.Token{Options: r.options, Token: lexer.Token{Type: lexer.ENDPARENTHESIS, Value: ")"}}
 		elements = append(elements, endToken)
 		return &formatters.Type{Options: r.options, Elements: elements}
+
+	case lexer.CREATE, lexer.ALTER, lexer.UPDATE, lexer.DELETE, lexer.DROP,
+		lexer.SHOW, lexer.DISCARD, lexer.BEGIN, lexer.SAVEPOINT, lexer.RELEASE, lexer.ROLLBACK, lexer.COMMIT:
+		return &formatters.Generic{Options: r.options, Elements: elements}
 	}
 
 	// Return nil as no group could be built

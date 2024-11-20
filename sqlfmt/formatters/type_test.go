@@ -29,7 +29,7 @@ func TestFormatType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := &bytes.Buffer{}
-			el := &Update{Options: options, Elements: tt.tokenSource}
+			el := &Generic{Options: options, Elements: tt.tokenSource}
 
 			_ = el.Format(buf, nil, 0)
 			got := buf.String()

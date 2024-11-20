@@ -8,7 +8,7 @@ import (
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
-func TestFormatCreate(t *testing.T) {
+func TestFormatGeneric(t *testing.T) {
 	options := DefaultOptions()
 	tests := []struct {
 		name        string
@@ -28,7 +28,7 @@ func TestFormatCreate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := &bytes.Buffer{}
-			el := &Update{Options: options, Elements: tt.tokenSource}
+			el := &Generic{Options: options, Elements: tt.tokenSource}
 
 			_ = el.Format(buf, nil, 0)
 			got := buf.String()

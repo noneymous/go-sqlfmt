@@ -257,7 +257,7 @@ func TestParse(t *testing.T) {
 				{Type: lexer.EOF, Value: "EOF"},
 			},
 			want: []formatters.Formatter{
-				&formatters.Update{
+				&formatters.Generic{
 					Options: options,
 					Elements: []formatters.Formatter{
 						formatters.Token{Options: options, Token: lexer.Token{Type: lexer.UPDATE, Value: "UPDATE"}},
