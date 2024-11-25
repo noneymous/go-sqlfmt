@@ -136,7 +136,17 @@ func (t *tokenizer) scan() (Token, error) {
 		// Return with error in case of unexpected value
 		return Token{}, fmt.Errorf("invalid punctuation value: %v", buf.String())
 
-	case isSlash(ch):
+	case isSlash(ch) || isDash(ch):
+
+		// Abort wrong comment indications
+		if isSlash(ch) {
+			if !t.peekSubsequent(isSlash) && !t.peekSubsequent(isAsterisk) {
+				break
+			}
+		}
+		if isDash(ch) && !t.peekSubsequent(isDash) {
+			break
+		}
 
 		// Check if next character opens comment and read it
 		comment, errComment := t.readComment(&buf, ch)
@@ -257,7 +267,9 @@ func (t *tokenizer) scan() (Token, error) {
 func (t *tokenizer) peekSubsequent(isCharacter func(ch rune) bool) bool {
 
 	// Unread character at the end
-	defer func() { _ = t.r.UnreadRune() }()
+	defer func() {
+		_ = t.r.UnreadRune()
+	}()
 
 	// Read character
 	nextCh, _, errNext := t.r.ReadRune()
@@ -266,9 +278,7 @@ func (t *tokenizer) peekSubsequent(isCharacter func(ch rune) bool) bool {
 	}
 
 	// Evaluate character or, if necessary, step into recursive call to check subsequent character
-	if isWhitespace(nextCh) {
-		return t.peekSubsequent(isCharacter)
-	} else if isCharacter(nextCh) {
+	if isCharacter(nextCh) {
 		return true
 	} else {
 		return false
@@ -280,9 +290,11 @@ func (t *tokenizer) readComment(buf *bytes.Buffer, chPrev rune) (string, error) 
 
 	// Check kind of comment
 	singleLine := false
-	if t.peekSubsequent(isSlash) {
+	if isSlash(chPrev) && t.peekSubsequent(isSlash) {
 		singleLine = true // one-line comment //
-	} else if t.peekSubsequent(isWildcard) {
+	} else if isDash(chPrev) && t.peekSubsequent(isDash) {
+		singleLine = true // one-line comment --
+	} else if t.peekSubsequent(isAsterisk) {
 		singleLine = false // multi-line comment /* ... */
 	} else {
 		return "", nil
@@ -308,7 +320,7 @@ func (t *tokenizer) readComment(buf *bytes.Buffer, chPrev rune) (string, error) 
 		buf.WriteRune(chNext)
 
 		// Stop reading multi-line comment at termination sequence
-		if !singleLine && isWildcard(chPrev) && isSlash(chNext) {
+		if !singleLine && isAsterisk(chPrev) && isSlash(chNext) {
 			return buf.String(), nil
 		}
 
@@ -350,6 +362,10 @@ func isSlash(ch rune) bool {
 	return ch == '/'
 }
 
-func isWildcard(ch rune) bool {
+func isDash(ch rune) bool {
+	return ch == '-'
+}
+
+func isAsterisk(ch rune) bool {
 	return ch == '*'
 }

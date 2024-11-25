@@ -667,14 +667,6 @@ FROM "table"`,
   [[ xx], xx]
 FROM "table"`,
 		},
-		{
-			name: "select with line comment",
-			sql: `select xxxx, --comment
-        xxxx`,
-			want: `SELECT
-  xxxx,
-  --comment xxxx`,
-		},
 
 		/*
 		 * INSERT query
@@ -900,6 +892,14 @@ WHERE
   xxxx`,
 		},
 		{
+			name: "Comment dashed in simple select",
+			sql: `select xxxx, --comment
+        xxxx`,
+			want: `SELECT
+  xxxx, --comment
+  xxxx`,
+		},
+		{
 			name: "Comment variations",
 			sql: `select
   col1, // the first column
@@ -909,14 +909,14 @@ WHERE
 from (
   select distinct // this is a test one-line comment
     * 
-  from table1 // this defines the table
+  from table1 // this defines the table ;
   where // this is a where clause
     // this is a where clause
     col1 > 0
     /* 
-     * it starts with some comments
+     * it starts with some comments ;
      */
-    and col2 != ""
+    and col2 != "" -- dashed comment ;
     and col4 /* important */ = 2
   order by col1, col2 desc // sort by those clauses
 ) t2
@@ -932,13 +932,13 @@ order by col1 desc, col2 asc /* final comment.
 FROM (
   SELECT DISTINCT // this is a test one-line comment
     *
-  FROM table1 // this defines the table
+  FROM table1 // this defines the table ;
   WHERE // this is a where clause
     // this is a where clause
     col1 > 0 /* 
-     * it starts with some comments
+     * it starts with some comments ;
      */
-    AND col2 != ""
+    AND col2 != "" -- dashed comment ;
     AND col4 /* important */ = 2
   ORDER BY
     col1,
@@ -1037,7 +1037,7 @@ SELECT
   CASE
     WHEN state = 'active' THEN ROUND(
     ( EXTRACT(epoch
-      FROM NOW() - query_start) /60
+      FROM NOW() - query_start) / 60
     ):: NUMERIC, 2)
     ELSE 0
   END AS active_since
