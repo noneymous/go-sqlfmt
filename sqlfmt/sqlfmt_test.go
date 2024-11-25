@@ -894,10 +894,10 @@ WHERE
 		{
 			name: "Comment dashed in simple select",
 			sql: `select xxxx, --comment
-        xxxx`,
+        xxxx -- comment`,
 			want: `SELECT
   xxxx, --comment
-  xxxx`,
+  xxxx -- comment`,
 		},
 		{
 			name: "Comment variations",
