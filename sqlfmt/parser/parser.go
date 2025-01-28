@@ -13,20 +13,21 @@ const joinStartRange = 3
 func Parse(tokens []lexer.Token, options *formatters.Options) ([]formatters.Formatter, error) {
 
 	// Get first none-comment token
-	var t lexer.TokenType
+	var t lexer.Token
 	for _, token := range tokens {
 		if token.Type != lexer.COMMENT {
-			t = token.Type
+			t = token
 			break
 		}
 	}
 
 	// Check if tokenized string is actually an SQL query
-	if !(t == lexer.SELECT || t == lexer.UPDATE || t == lexer.DELETE || t == lexer.DROP || t == lexer.CREATE ||
-		t == lexer.INSERT || t == lexer.ALTER || t == lexer.LOCK || t == lexer.WITH || t == lexer.SET ||
-		t == lexer.SHOW || t == lexer.DISCARD || t == lexer.BEGIN || t == lexer.SAVEPOINT || t == lexer.RELEASE ||
-		t == lexer.ROLLBACK || t == lexer.COMMIT) {
-		return nil, fmt.Errorf("invalid sql statement")
+	if !(t.Type == lexer.SELECT || t.Type == lexer.UPDATE || t.Type == lexer.DELETE || t.Type == lexer.DROP ||
+		t.Type == lexer.CREATE || t.Type == lexer.INSERT || t.Type == lexer.ALTER || t.Type == lexer.LOCK ||
+		t.Type == lexer.WITH || t.Type == lexer.SET || t.Type == lexer.SHOW || t.Type == lexer.DISCARD ||
+		t.Type == lexer.BEGIN || t.Type == lexer.SAVEPOINT || t.Type == lexer.RELEASE || t.Type == lexer.ROLLBACK ||
+		t.Type == lexer.COMMIT) {
+		return nil, fmt.Errorf("invalid sql statement '%s'", t.Value)
 	}
 
 	// Prepare parser for segment
