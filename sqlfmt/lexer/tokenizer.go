@@ -335,7 +335,7 @@ func isPunctuation(ch rune) bool {
 }
 
 func isNewline(ch rune) bool {
-	return ch == '\n'
+	return ch == '\n' || ch == '\r' || ch == '\f'
 }
 
 func isWhitespace(ch rune) bool {
