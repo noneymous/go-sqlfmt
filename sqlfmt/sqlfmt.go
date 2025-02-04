@@ -90,15 +90,46 @@ func addPadding(s string, leftPadding string) string {
 // e.g. by putting a part of the SQL query at the end of a one-line comment where it would be ignored.
 func removeComments(str string) string {
 	var strNew string
+	var quoted bool
 	var skip bool
 	for i, c := range str {
-		if c == '/' && len(str) > i+1 && str[i+1] == '/' {
-			skip = true
+
+		// Don't remove quoted strings, even if they might contain comment indicators
+		if !quoted && c == '\'' {
+			quoted = true
+			strNew += string(c)
+			continue
+		} else if quoted && c == '\'' {
+			quoted = false
+			strNew += string(c)
+			continue
+		} else if quoted {
+			strNew += string(c)
 			continue
 		}
+
+		// Check for start of comment
+		if !skip {
+
+			// Remove slash comment
+			if c == '/' && len(str) > i+1 && str[i+1] == '/' {
+				skip = true
+				continue
+			}
+
+			// Remove dash comment
+			if c == '-' && len(str) > i+1 && str[i+1] == '-' {
+				skip = true
+				continue
+			}
+		}
+
+		// Remove until end of line
 		if skip && c == '\n' {
 			skip = false
 		}
+
+		// Add character if not within comment
 		if !skip {
 			strNew += string(c)
 		}

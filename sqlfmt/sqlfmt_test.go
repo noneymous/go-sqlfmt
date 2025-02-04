@@ -1050,6 +1050,14 @@ WHERE datname = (
 )
 ORDER BY pid`,
 		},
+		{
+			name: "Comments within quotes (should be ignored)",
+			sql:  `select distinct concat('http://', ip, ':', port, '/--') from hosts where port = 80`,
+			want: `SELECT DISTINCT
+  CONCAT('http://', ip, ':', port, '/--')
+FROM hosts
+WHERE port = 80`,
+		},
 
 		/*
 		 * Special control queries
@@ -1165,5 +1173,60 @@ func TestRemove(t *testing.T) {
 	want := "selectxxxfromxxx"
 	if got != want {
 		t.Errorf("want %#v, got %#v", want, got)
+	}
+}
+
+func Test_removeComments(t *testing.T) {
+	tests := []struct {
+		name string
+		str  string
+		want string
+	}{
+		{
+			name: "Dash comment",
+			str: `SELECT DISTINCT concat('http://',ip,':',port,'/') -- create string
+FROM public.all_services`,
+			want: `SELECT DISTINCT concat('http://',ip,':',port,'/') 
+FROM public.all_services`,
+		},
+		{
+			name: "Slash comment",
+			str: `SELECT DISTINCT concat('http://',ip,':',port,'/') // create string
+FROM public.all_services`,
+			want: `SELECT DISTINCT concat('http://',ip,':',port,'/') 
+FROM public.all_services`,
+		},
+		{
+			name: "Slash multiline comment (kept intact)",
+			str: `SELECT DISTINCT concat('http://',ip,':',port,'/') /*
+ create string
+*/
+FROM public.all_services`,
+			want: `SELECT DISTINCT concat('http://',ip,':',port,'/') /*
+ create string
+*/
+FROM public.all_services`,
+		},
+		{
+			name: "Dash comment in quotes",
+			str:  `SELECT DISTINCT concat(ip,'--',port) FROM public.all_services`,
+			want: `SELECT DISTINCT concat(ip,'--',port) FROM public.all_services`,
+		},
+		{
+			name: "Slash comment in quotes",
+			str:  `SELECT DISTINCT concat('http://',ip,':',port,'/') FROM public.all_services`,
+			want: `SELECT DISTINCT concat('http://',ip,':',port,'/') FROM public.all_services`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := removeComments(tt.str); got != tt.want {
+				if tt.want != got {
+					t.Errorf("\n=======================\n=== GOT ==============>\n%s\n=======================\n=== WANT =============>\n%s\n=======================", got, tt.want)
+				} else {
+					fmt.Println(fmt.Sprintf("%s\n%s", got, "========================================================================"))
+				}
+			}
+		})
 	}
 }
