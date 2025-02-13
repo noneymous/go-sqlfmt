@@ -12,24 +12,6 @@ const joinStartRange = 3
 // Each Formatter is a logical segment of an SQL query. It may also be a group of such.
 func Parse(tokens []lexer.Token, options *formatters.Options) ([]formatters.Formatter, error) {
 
-	// Get first none-comment token
-	var t lexer.Token
-	for _, token := range tokens {
-		if token.Type != lexer.COMMENT {
-			t = token
-			break
-		}
-	}
-
-	// Check if tokenized string is actually an SQL query
-	if !(t.Type == lexer.SELECT || t.Type == lexer.UPDATE || t.Type == lexer.DELETE || t.Type == lexer.DROP ||
-		t.Type == lexer.CREATE || t.Type == lexer.INSERT || t.Type == lexer.ALTER || t.Type == lexer.LOCK ||
-		t.Type == lexer.WITH || t.Type == lexer.SET || t.Type == lexer.SHOW || t.Type == lexer.DISCARD ||
-		t.Type == lexer.BEGIN || t.Type == lexer.SAVEPOINT || t.Type == lexer.RELEASE || t.Type == lexer.ROLLBACK ||
-		t.Type == lexer.COMMIT) {
-		return nil, fmt.Errorf("invalid sql statement '%s'", t.Value)
-	}
-
 	// Prepare parser for segment
 	parser, errParser := NewParser(tokens, options)
 	if errParser != nil {
@@ -182,7 +164,12 @@ func (r *Parser) Parse() ([]formatters.Formatter, error) {
 		r.result = append(r.result, segmentFormatter)
 
 		// Increment offset counter to proceed with next segment, if available
-		offset += idxEndSegment
+		switch r.tokens[offset].Type {
+		case lexer.STARTPARENTHESIS, lexer.CASE, lexer.FUNCTION, lexer.TYPE:
+			offset += idxEndSegment + 1 // Some types have end tags, e.g. "END" closing "CASE" or ")" closing "(". Next token starts after them.
+		default:
+			offset += idxEndSegment
+		}
 	}
 
 	// Return process result

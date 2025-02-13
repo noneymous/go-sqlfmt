@@ -90,6 +90,24 @@ FROM xxx
 UNION`, // Invalid query but still formatted well
 		},
 		{
+			name: "Union select with parenthesis (unconventional but valid)",
+			sql:  `select * from ((select * from pg_catalog.pg_default_acl) union (select * from pg_catalog.pg_default_acl))`,
+			want: `SELECT
+  *
+FROM (
+  (
+    SELECT
+      *
+    FROM pg_catalog.pg_default_acl
+  )
+  UNION (
+    SELECT
+      *
+    FROM pg_catalog.pg_default_acl
+  )
+)`,
+		},
+		{
 			name: "Join select",
 			sql:  `select a.xxx, a.yyy, b.zzz from a left join b on a.id = b.id where b.column > 2`,
 			want: `SELECT
@@ -155,6 +173,48 @@ LIMIT xxx`,
 SELECT
   AVG(total) average_product_quantity
 FROM cte_quantity;`,
+		},
+
+		/*
+		 * Query fragments. Allow formatting query pieces as long as they are semantically correct.
+		 */
+		{
+			name: "Fragment UNION",
+			sql:  `union (select * from pg_catalog.pg_default_acl)`,
+			want: `UNION (
+  SELECT
+    *
+  FROM pg_catalog.pg_default_acl
+)`,
+		},
+		{
+			name: "Fragment FROM",
+			sql:  `from "table where a=1"`,
+			want: `FROM "table
+WHERE a = 1"`,
+		},
+		{
+			name: "Fragment WHERE",
+			sql:  `where a=1 and b=2 order by a`,
+			want: `WHERE a = 1 AND b = 2
+ORDER BY a`,
+		},
+		{
+			name: "Fragment ORDER",
+			sql:  `order by a, b desc limit 10`,
+			want: `ORDER BY a, b DESC
+LIMIT 10`,
+		},
+		{
+			name: "Fragment LIMIT",
+			sql:  `limit 1`,
+			want: `LIMIT 1`,
+		},
+		{
+			name: "Fragment JOIN",
+			sql:  `left join tble2 on tble1.id = tble2.id where a=1`,
+			want: `LEFT JOIN tble2 ON tble1.id = tble2.id
+WHERE a = 1`,
 		},
 
 		/*
