@@ -143,6 +143,7 @@ var (
 	EndOfOrderBy     = []TokenType{LIMIT, FETCH, OFFSET, UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
 	EndOfLimitClause = []TokenType{UNION, EXCEPT, INTERSECT, ENDPARENTHESIS, EOF}
 	EndOfParenthesis = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfTieClause   = []TokenType{SELECT, STARTPARENTHESIS, EOF}
 	EndOfUpdate      = []TokenType{WHERE, SET, RETURNING, EOF}
 	EndOfSet         = []TokenType{FROM, WHERE, RETURNING, EOF}
 	EndOfReturning   = []TokenType{EOF}
@@ -163,7 +164,6 @@ var (
 	EndOfSavepoint   = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfRollback    = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfCommit      = []TokenType{ENDPARENTHESIS, EOF}
-	EndOfTieClause   []TokenType // Empty slice means anything is end token
 	EndOfComment     []TokenType // Empty slice means anything is end token
 )
 
