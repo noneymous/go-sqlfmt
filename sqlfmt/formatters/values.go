@@ -29,7 +29,7 @@ func (formatter *Values) Format(buf *bytes.Buffer, parent []Formatter, parentIdx
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
 	for i, el := range elements {
 
-		// Write element or recursively call it's Format function
+		// Write element or recursively call its Format function
 		if token, ok := el.(Token); ok {
 			formatter.WriteValues(buf, token, formatter.IndentLevel)
 		} else {

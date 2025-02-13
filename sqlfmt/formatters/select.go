@@ -31,7 +31,7 @@ func (formatter *Select) Format(buf *bytes.Buffer, parent []Formatter, parentIdx
 	var previousToken Token
 	for i, el := range elements {
 
-		// Write element or recursively call it's Format function
+		// Write element or recursively call its Format function
 		if token, ok := el.(Token); ok {
 			formatter.writeSelect(buf, token, previousToken, formatter.IndentLevel, i, true)
 		} else {

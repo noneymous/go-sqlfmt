@@ -77,7 +77,7 @@ func (formatter *Parenthesis) Format(buf *bytes.Buffer, parent []Formatter, pare
 	var previousToken Token
 	for i, el := range elements {
 
-		// Write element or recursively call it's Format function
+		// Write element or recursively call its Format function
 		if token, ok := el.(Token); ok {
 			writeParenthesis(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, i, startSameLine, endSameLine, hasTypeDefinitions)
 		} else {
@@ -197,8 +197,8 @@ func writeParenthesis(
 	default:
 
 		// Move token to new line, because it cannot follow after single line comment
-		if previousToken.Type == lexer.COMMENT && strings.HasPrefix(previousToken.Value, "//") {
-			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+		if previousToken.Type == lexer.COMMENT && !strings.HasPrefix(previousToken.Value, "/*") {
+			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
 			return
 		}
 

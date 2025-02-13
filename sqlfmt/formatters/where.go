@@ -52,7 +52,7 @@ func (formatter *Where) Format(buf *bytes.Buffer, parent []Formatter, parentIdx 
 	var previousToken Token
 	for i, el := range elements {
 
-		// Write element or recursively call it's Format function
+		// Write element or recursively call its Format function
 		if token, ok := el.(Token); ok {
 			writeWhere(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, i, hasMany)
 		} else {
@@ -143,7 +143,7 @@ func writeWhere(
 	default:
 
 		// Move token to new line, because it cannot follow after single line comment
-		if previousToken.Type == lexer.COMMENT {
+		if previousToken.Type == lexer.COMMENT && !strings.HasPrefix(previousToken.Value, "/*") {
 			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
 			return
 		}

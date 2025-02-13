@@ -37,7 +37,7 @@ func (formatter *From) Format(buf *bytes.Buffer, parent []Formatter, parentIdx i
 	var previousToken Token
 	for i, el := range elements {
 
-		// Write element or recursively call it's Format function
+		// Write element or recursively call its Format function
 		if token, ok := el.(Token); ok {
 			write(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, previousParentToken, formatter.IndentLevel, false)
 		} else {

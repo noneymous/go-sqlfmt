@@ -83,7 +83,7 @@ func (formatter *Type) writeType(buf *bytes.Buffer, token, previousToken Token, 
 	default:
 
 		// Move token to new line, because it cannot follow after single line comment
-		if previousToken.Type == lexer.COMMENT && strings.HasPrefix(previousToken.Value, "//") {
+		if previousToken.Type == lexer.COMMENT && !strings.HasPrefix(previousToken.Value, "/*") {
 			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
 			return
 		}

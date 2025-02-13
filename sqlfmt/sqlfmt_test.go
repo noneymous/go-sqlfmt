@@ -1058,6 +1058,36 @@ ORDER BY pid`,
 FROM hosts
 WHERE port = 80`,
 		},
+		{
+			name: "Comment after opening parenthesis",
+			sql: `select *
+from tbl
+where typtype in ('b', 'r') or -- base, range
+    typtype in ('m', 'e') or -- multirange, enum
+    (typtype = 'a' and (  -- array of...
+        elemtyptype in ('b', 'r', 'm', 'e', 'd') or -- array of base, range, multirange, enum, domain
+        (elemtyptype = 'p' and elemtypname in ('record', 'void')) -- arrays of special supported pseudo-types
+    ))`,
+			want: `SELECT
+  *
+FROM tbl
+WHERE
+  typtype IN ('b', 'r')
+  OR -- base, range
+  typtype IN ('m', 'e')
+  OR -- multirange, enum
+  (
+    typtype = 'a'
+    AND ( -- array of...
+      elemtyptype IN ('b', 'r', 'm', 'e', 'd')
+      OR -- array of base, range, multirange, enum, domain
+      (
+        elemtyptype = 'p'
+        AND elemtypname IN ('record', 'void')
+      ) -- arrays of special supported pseudo-types
+    )
+  )`,
+		},
 
 		/*
 		 * Special control queries

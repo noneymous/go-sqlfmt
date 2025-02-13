@@ -210,7 +210,7 @@ func write(
 	default:
 
 		// Move token to new line, because it cannot follow after single line comment
-		if previousToken.Type == lexer.COMMENT && strings.HasPrefix(previousToken.Value, "//") {
+		if previousToken.Type == lexer.COMMENT && !strings.HasPrefix(previousToken.Value, "/*") {
 			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
 			return
 		}
@@ -260,7 +260,7 @@ func writeWithComma(
 	default:
 
 		// Move token to new line, because it cannot follow after single line comment
-		if previousToken.Type == lexer.COMMENT {
+		if previousToken.Type == lexer.COMMENT && !strings.HasPrefix(previousToken.Value, "/*") {
 			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
 			return
 		}

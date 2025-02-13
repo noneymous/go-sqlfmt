@@ -61,7 +61,7 @@ func (formatter *Subquery) Format(buf *bytes.Buffer, parent []Formatter, parentI
 	var previousToken Token
 	for i, el := range elements {
 
-		// Write element or recursively call it's Format function
+		// Write element or recursively call its Format function
 		if token, ok := el.(Token); ok {
 			writeParenthesis(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, i, startSameLine, endSameLine, false) // Subquery is not different to a parenthesis group in regard to formatting
 		} else {

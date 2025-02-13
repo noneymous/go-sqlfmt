@@ -40,7 +40,7 @@ func (formatter *Or) Format(buf *bytes.Buffer, parent []Formatter, parentIdx int
 	var previousToken Token
 	for i, el := range elements {
 
-		// Write element or recursively call it's Format function
+		// Write element or recursively call its Format function
 		if token, ok := el.(Token); ok {
 			writeAnd(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, formatter.SameLine, isPartOfJoin) // OR is not different to an AND in regard to formatting
 		} else {

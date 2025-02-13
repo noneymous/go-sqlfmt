@@ -46,7 +46,7 @@ func (formatter *Returning) Format(buf *bytes.Buffer, parent []Formatter, parent
 	var previousToken Token
 	for i, el := range elements {
 
-		// Write element or recursively call it's Format function
+		// Write element or recursively call its Format function
 		if token, ok := el.(Token); ok {
 			writeWithComma(buf, INDENT, NEWLINE, WHITESPACE, token, previousToken, formatter.IndentLevel, i, hasMany)
 		} else {
