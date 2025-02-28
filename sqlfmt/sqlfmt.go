@@ -141,7 +141,7 @@ func removeComments(str string) string {
 func removeSymbols(s string) string {
 	var result []rune
 	for _, r := range s {
-		if string(r) == "\n" || string(r) == " " || string(r) == "\t" || string(r) == "　" {
+		if string(r) == "\n" || string(r) == "\r" || string(r) == "\f" || string(r) == "\t" || string(r) == " " || string(r) == "　" {
 			continue
 		}
 		result = append(result, r)

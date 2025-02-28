@@ -1244,17 +1244,25 @@ WHERE
 }
 
 func TestCompareSemantic(t *testing.T) {
-	test := struct {
+	tests := []struct {
+		name   string
 		before string
 		after  string
 		want   bool
 	}{
-		before: "select * from xxx",
-		after:  "select\n  *\nFROM xxx",
-		want:   true,
+		{
+			name:   "simple",
+			before: "select * from xxx",
+			after:  "select\n  *\nFROM xxx",
+			want:   true,
+		},
 	}
-	if got := CompareSemantic(test.before, test.after); got != test.want {
-		t.Errorf("want %v#v got %#v", test.want, got)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CompareSemantic(tt.before, tt.after); got != tt.want {
+				t.Errorf("want %v#v got %#v", tt.want, got)
+			}
+		})
 	}
 }
 
