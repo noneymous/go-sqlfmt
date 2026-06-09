@@ -76,6 +76,12 @@ func (formatter *Function) writeFunction(buf *bytes.Buffer, token, previousToken
 	var NEWLINE = formatter.Newline
 	var WHITESPACE = formatter.Whitespace
 
+	// Any token following a line comment must start on a new line
+	if previousToken.IsLineComment() {
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+		return
+	}
+
 	// Write element
 	switch {
 	case token.Type == lexer.FUNCTION && isColumnArea: // Write function name token to new line in SELECT clause
@@ -91,13 +97,6 @@ func (formatter *Function) writeFunction(buf *bytes.Buffer, token, previousToken
 	case strings.HasPrefix(token.Value, "::"): // Write cast token without whitespace
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:
-
-		// Move token to new line, because it cannot follow after single line comment
-		if previousToken.Type == lexer.COMMENT && !strings.HasPrefix(previousToken.Value, "/*") {
-			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
-			return
-		}
-
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }

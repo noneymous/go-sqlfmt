@@ -3,7 +3,6 @@ package formatters
 import (
 	"bytes"
 	"fmt"
-	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 	"strings"
 )
 
@@ -83,6 +82,12 @@ func (formatter *Generic) write(buf *bytes.Buffer, token, previousToken Token, i
 	var NEWLINE = formatter.Newline
 	var WHITESPACE = formatter.Whitespace
 
+	// Any token following a line comment must start on a new line
+	if previousToken.IsLineComment() {
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+		return
+	}
+
 	// Write element
 	switch {
 	case position == 0:
@@ -90,13 +95,6 @@ func (formatter *Generic) write(buf *bytes.Buffer, token, previousToken Token, i
 
 	// Write common token values
 	default:
-
-		// Move token to new line, because it cannot follow after single line comment
-		if previousToken.Type == lexer.COMMENT && !strings.HasPrefix(previousToken.Value, "/*") {
-			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
-			return
-		}
-
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }

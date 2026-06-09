@@ -89,6 +89,12 @@ func (formatter *Select) writeSelect(buf *bytes.Buffer, token, previousToken Tok
 	var NEWLINE = formatter.Newline
 	var WHITESPACE = formatter.Whitespace
 
+	// Any token following a line comment must start on a new line
+	if previousToken.IsLineComment() {
+		buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
+		return
+	}
+
 	// Write element
 	switch {
 
@@ -110,7 +116,7 @@ func (formatter *Select) writeSelect(buf *bytes.Buffer, token, previousToken Tok
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:
 
-		// Move token to new line, because it cannot follow after single line comment
+		// In SELECT columns, any comment (including block) should push the next column to a new line
 		if previousToken.Type == lexer.COMMENT {
 			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
 			return

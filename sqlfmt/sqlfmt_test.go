@@ -2,8 +2,9 @@ package sqlfmt
 
 import (
 	"fmt"
-	"github.com/noneymous/go-sqlfmt/sqlfmt/formatters"
 	"testing"
+
+	"github.com/noneymous/go-sqlfmt/sqlfmt/formatters"
 )
 
 func TestFormat(t *testing.T) {
@@ -1147,6 +1148,152 @@ WHERE
       ) -- arrays of special supported pseudo-types
     )
   )`,
+		},
+
+		/*
+		 * Line comment followed by comma (must not be swallowed by the comment)
+		 */
+		{
+			name: "Line comment before comma in SELECT columns",
+			sql: `select col1 -- first column
+, col2 from tble`,
+			want: `SELECT
+  col1 -- first column
+  ,
+  col2
+FROM tble`,
+		},
+		{
+			name: "Line comment between SELECT columns with trailing comma",
+			sql: `select col1, -- first column
+col2, -- second column
+col3
+from tble`,
+			want: `SELECT
+  col1, -- first column
+  col2, -- second column
+  col3
+FROM tble`,
+		},
+		{
+			name: "Line comment before cast operator",
+			sql: `select col1 -- comment
+::text
+from tble`,
+			want: `SELECT
+  col1 -- comment
+  :: TEXT
+FROM tble`,
+		},
+		{
+			name: "Line comment on last column before FROM",
+			sql: `select col1, col2 -- last column
+from tble where a = 1`,
+			want: `SELECT
+  col1,
+  col2 -- last column
+FROM tble
+WHERE a = 1`,
+		},
+		{
+			name: "Standalone line comment between columns",
+			sql: `select col1, -- partition table
+col2 from tble`,
+			want: `SELECT
+  col1, -- partition table
+  col2
+FROM tble`,
+		},
+		{
+			name: "Standalone line comment before comma",
+			sql: `select col1 -- added for partition table
+, col2 from tble`,
+			want: `SELECT
+  col1 -- added for partition table
+  ,
+  col2
+FROM tble`,
+		},
+
+		/*
+		 * Line comments in non-SELECT clauses
+		 */
+		{
+			name: "Line comment in WHERE clause",
+			sql: `select col1 from tble where col1 = 1 -- check first condition
+and col2 = 2`,
+			want: `SELECT
+  col1
+FROM tble
+WHERE
+  col1 = 1 -- check first condition
+  AND col2 = 2`,
+		},
+		{
+			name: "Line comment before AND in WHERE",
+			sql: `select col1 from tble where col1 = 1 -- first
+and col2 = 2 -- second
+and col3 = 3`,
+			want: `SELECT
+  col1
+FROM tble
+WHERE
+  col1 = 1 -- first
+  AND col2 = 2 -- second
+  AND col3 = 3`,
+		},
+		{
+			name: "Line comment in ORDER BY clause",
+			sql: `select col1 from tble order by col1, -- primary sort
+col2 desc`,
+			want: `SELECT
+  col1
+FROM tble
+ORDER BY
+  col1, -- primary sort
+  col2 DESC`,
+		},
+		{
+			name: "Line comment in GROUP BY clause",
+			sql: `select col1, count(*) from tble group by col1, -- main grouping
+col2`,
+			want: `SELECT
+  col1,
+  COUNT(*)
+FROM tble
+GROUP BY
+  col1, -- main grouping
+  col2`,
+		},
+		{
+			name: "Line comment in JOIN clause",
+			sql: `select a.col1 from tble1 a join tble2 b -- joining lookup table
+on a.id = b.id where a.col1 = 1`,
+			want: `SELECT
+  a.col1
+FROM tble1 a
+JOIN tble2 b -- joining lookup table
+  ON a.id = b.id
+WHERE a.col1 = 1`,
+		},
+		{
+			name: "Line comment before FROM",
+			sql: `select col1 -- selected column
+from tble`,
+			want: `SELECT
+  col1 -- selected column
+FROM tble`,
+		},
+		{
+			name: "Line comment in function arguments",
+			sql: `select coalesce(col1, -- try first
+col2, -- try second
+'default') from tble`,
+			want: `SELECT
+  COALESCE(col1, -- try first
+  col2, -- try second
+  'default')
+FROM tble`,
 		},
 
 		/*

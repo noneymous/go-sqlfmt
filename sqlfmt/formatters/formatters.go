@@ -103,6 +103,11 @@ func (formatter Token) ContinueLine() bool {
 		formatter.Type == lexer.AND || formatter.Type == lexer.OR
 }
 
+// IsLineComment returns true if token is a single-line comment (-- or //) as opposed to a block comment (/* */)
+func (formatter Token) IsLineComment() bool {
+	return formatter.Type == lexer.COMMENT && !strings.HasPrefix(formatter.Value, "/*")
+}
+
 // IsComparator returns true if token is a comparator
 func (formatter Token) IsComparator() bool {
 	return formatter.Type == lexer.COMPARATOR
@@ -194,6 +199,13 @@ func write(
 	indent int,
 	hasMany bool,
 ) {
+
+	// Any token following a line comment must start on a new line
+	if previousToken.IsLineComment() {
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+		return
+	}
+
 	switch {
 	case token.ContinueNewline() && previousParentToken.Type != lexer.DELETE:
 		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
@@ -208,12 +220,6 @@ func write(
 	case strings.HasPrefix(token.Value, "::"):
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:
-
-		// Move token to new line, because it cannot follow after single line comment
-		if previousToken.Type == lexer.COMMENT && !strings.HasPrefix(previousToken.Value, "/*") {
-			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
-			return
-		}
 
 		// Use newlines as separators
 		if hasMany {
@@ -242,6 +248,13 @@ func writeWithComma(
 	position int,
 	hasMany bool,
 ) {
+
+	// Any token following a line comment must start on a new line
+	if previousToken.IsLineComment() {
+		buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
+		return
+	}
+
 	switch {
 	case token.ContinueNewline():
 		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
@@ -258,13 +271,6 @@ func writeWithComma(
 	case strings.HasPrefix(token.Value, "::"):
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:
-
-		// Move token to new line, because it cannot follow after single line comment
-		if previousToken.Type == lexer.COMMENT && !strings.HasPrefix(previousToken.Value, "/*") {
-			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
-			return
-		}
-
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }

@@ -3,8 +3,9 @@ package formatters
 import (
 	"bytes"
 	"fmt"
-	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 	"strings"
+
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
 // Values group formatter
@@ -27,11 +28,13 @@ func (formatter *Values) Format(buf *bytes.Buffer, parent []Formatter, parentIdx
 	}
 
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
+	var previousToken Token
 	for i, el := range elements {
 
 		// Write element or recursively call its Format function
 		if token, ok := el.(Token); ok {
-			formatter.WriteValues(buf, token, formatter.IndentLevel)
+			formatter.WriteValues(buf, token, previousToken, formatter.IndentLevel)
+			previousToken = token
 		} else {
 
 			// Break parenthesis group (list of values) into new line
@@ -65,12 +68,18 @@ func (formatter *Values) AddIndent(lev int) {
 	}
 }
 
-func (formatter *Values) WriteValues(buf *bytes.Buffer, token Token, indent int) {
+func (formatter *Values) WriteValues(buf *bytes.Buffer, token Token, previousToken Token, indent int) {
 
 	// Prepare short variables for better visibility
 	var INDENT = formatter.Indent
 	var NEWLINE = formatter.Newline
 	var WHITESPACE = formatter.Whitespace
+
+	// Any token following a line comment must start on a new line
+	if previousToken.IsLineComment() {
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+		return
+	}
 
 	switch {
 	case token.ContinueNewline():

@@ -182,6 +182,12 @@ func writeParenthesis(
 		}
 	}
 
+	// Any token following a line comment must start on a new line
+	if previousToken.IsLineComment() {
+		buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
+		return
+	}
+
 	// Write common token values
 	switch {
 
@@ -195,13 +201,6 @@ func writeParenthesis(
 	case strings.HasPrefix(token.Value, "::"):
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:
-
-		// Move token to new line, because it cannot follow after single line comment
-		if previousToken.Type == lexer.COMMENT && !strings.HasPrefix(previousToken.Value, "/*") {
-			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
-			return
-		}
-
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }

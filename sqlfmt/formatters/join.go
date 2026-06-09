@@ -75,6 +75,16 @@ func (formatter *Join) writeJoin(buf *bytes.Buffer, token, previousToken Token, 
 	var NEWLINE = formatter.Newline
 	var WHITESPACE = formatter.Whitespace
 
+	// Any token following a line comment must start on a new line
+	if previousToken.IsLineComment() {
+		if token.Type == lexer.ON || token.Type == lexer.USING {
+			buf.WriteString(fmt.Sprintf("%s%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), INDENT, token.Value))
+		} else {
+			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+		}
+		return
+	}
+
 	// Write element
 	switch {
 	case position == 0 && token.IsJoinStart():
@@ -86,13 +96,6 @@ func (formatter *Join) writeJoin(buf *bytes.Buffer, token, previousToken Token, 
 	case strings.HasPrefix(token.Value, "::"):
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 	default:
-
-		// Move token to new line, because it cannot follow after single line comment
-		if previousToken.Type == lexer.COMMENT && !strings.HasPrefix(previousToken.Value, "/*") {
-			buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
-			return
-		}
-
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
 }
