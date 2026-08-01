@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+
+	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
 
 // Generic group formatter
@@ -93,8 +95,26 @@ func (formatter *Generic) write(buf *bytes.Buffer, token, previousToken Token, i
 	case position == 0:
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 
+	// Within a COPY statement, move the TO target clause onto its own line, mirroring
+	// how the FROM clause is broken out. This is scoped to COPY so other Generic
+	// statements (e.g. ROLLBACK TO SAVEPOINT) keep TO on the same line.
+	case token.Type == lexer.TO && formatter.isCopy():
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+
 	// Write common token values
 	default:
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
+}
+
+// isCopy reports whether this Generic formatter represents a COPY statement,
+// determined by its first token element.
+func (formatter *Generic) isCopy() bool {
+	if len(formatter.Elements) == 0 {
+		return false
+	}
+	if token, ok := formatter.Elements[0].(Token); ok {
+		return token.Type == lexer.COPY
+	}
+	return false
 }

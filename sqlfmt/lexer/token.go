@@ -130,6 +130,7 @@ const (
 	ANALYZE
 	VACUUM
 	RESET
+	COPY
 )
 
 // Define end keywords for each clause segment
@@ -170,6 +171,7 @@ var (
 	EndOfAnalyze     = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfVacuum      = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfReset       = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfCopy        = []TokenType{EOF}
 	EndOfComment     []TokenType // Empty slice means anything is end token
 )
 
@@ -276,6 +278,7 @@ var keywordMap = map[string]TokenType{
 	"ANALYZE":   ANALYZE,
 	"VACUUM":    VACUUM,
 	"RESET":     RESET,
+	"COPY":      COPY,
 
 	/*
 	 * Data types

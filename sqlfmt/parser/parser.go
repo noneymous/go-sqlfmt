@@ -124,6 +124,8 @@ func NewParser(tokens []lexer.Token, options *formatters.Options) (*Parser, erro
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfVacuum}, nil
 	case lexer.RESET:
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfReset}, nil
+	case lexer.COPY:
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfCopy}, nil
 	default:
 		return nil, fmt.Errorf("invalid start token '%s'", tokens[0].Value)
 	}
@@ -474,7 +476,7 @@ func (r *Parser) buildFormatter() formatters.Formatter {
 
 	case lexer.CREATE, lexer.ALTER, lexer.UPDATE, lexer.DELETE, lexer.DROP,
 		lexer.SHOW, lexer.DISCARD, lexer.BEGIN, lexer.SAVEPOINT, lexer.RELEASE, lexer.ROLLBACK, lexer.COMMIT,
-		lexer.ANALYZE, lexer.VACUUM, lexer.RESET:
+		lexer.ANALYZE, lexer.VACUUM, lexer.RESET, lexer.COPY:
 		return &formatters.Generic{Options: r.options, Elements: elements}
 	}
 

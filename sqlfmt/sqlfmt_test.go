@@ -1366,6 +1366,46 @@ FROM tble`,
 		},
 
 		/*
+		 * Copy queries
+		 */
+		{
+			name: "Copy from file",
+			sql:  `copy all_hosts from '/tmp/data.csv'`,
+			want: `COPY all_hosts
+FROM '/tmp/data.csv'`,
+		},
+		{
+			name: "Copy columns to file with options",
+			sql:  `copy all_hosts (col1, col2) to '/tmp/out.csv' with (format csv)`,
+			want: `COPY all_hosts (col1, col2)
+TO '/tmp/out.csv'
+WITH (format csv)`,
+		},
+		{
+			name: "Copy to stdout",
+			sql:  `copy all_hosts to stdout`,
+			want: `COPY all_hosts
+TO stdout`,
+		},
+		{
+			name: "Copy subquery to stdout",
+			sql:  `copy (select * from all_hosts) to stdout`,
+			want: `COPY (
+  SELECT
+    *
+  FROM all_hosts
+)
+TO stdout`,
+		},
+		{
+			name: "Copy from stdin with options",
+			sql:  `copy all_hosts from stdin with (format csv, header true)`,
+			want: `COPY all_hosts
+FROM stdin
+WITH (format csv, header true)`,
+		},
+
+		/*
 		 * END
 		 */
 	}
