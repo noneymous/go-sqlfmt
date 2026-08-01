@@ -1366,6 +1366,73 @@ FROM tble`,
 		},
 
 		/*
+		 * Analyze queries
+		 */
+		{
+			name: "Analyze table",
+			sql:  `analyze all_hosts`,
+			want: `ANALYZE all_hosts`,
+		},
+		{
+			name: "Analyze table columns",
+			sql:  `analyze all_hosts (col1, col2)`,
+			want: `ANALYZE all_hosts (col1, col2)`,
+		},
+		{
+			name: "Analyze verbose",
+			sql:  `analyze verbose all_hosts`,
+			want: `ANALYZE verbose all_hosts`,
+		},
+		{
+			name: "Analyze all",
+			sql:  `analyze`,
+			want: `ANALYZE`,
+		},
+
+		/*
+		 * Vacuum queries
+		 */
+		{
+			name: "Vacuum table",
+			sql:  `vacuum all_hosts`,
+			want: `VACUUM all_hosts`,
+		},
+		{
+			name: "Vacuum with options",
+			sql:  `vacuum (full, analyze) all_hosts`,
+			want: `VACUUM (full, ANALYZE) all_hosts`,
+		},
+		{
+			name: "Vacuum full verbose",
+			sql:  `vacuum full verbose all_hosts`,
+			want: `VACUUM full verbose all_hosts`,
+		},
+		{
+			name: "Vacuum all",
+			sql:  `vacuum`,
+			want: `VACUUM`,
+		},
+
+		/*
+		 * Reset queries
+		 */
+		{
+			name: "Reset all",
+			sql:  `reset all`,
+			want: `RESET ALL`,
+		},
+		{
+			name: "Reset parameter",
+			sql:  `reset statement_timeout`,
+			want: `RESET statement_timeout`,
+		},
+		{
+			name: "Reset search path",
+			sql:  `reset search_path`,
+			want: `RESET search_path`,
+		},
+
+		/*
 		 * Copy queries
 		 */
 		{
