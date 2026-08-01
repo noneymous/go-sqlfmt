@@ -127,6 +127,9 @@ const (
 	RELEASE
 	ROLLBACK
 	COMMIT
+	ANALYZE
+	VACUUM
+	RESET
 )
 
 // Define end keywords for each clause segment
@@ -164,6 +167,9 @@ var (
 	EndOfSavepoint   = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfRollback    = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfCommit      = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfAnalyze     = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfVacuum      = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfReset       = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfComment     []TokenType // Empty slice means anything is end token
 )
 
@@ -267,6 +273,9 @@ var keywordMap = map[string]TokenType{
 	"RELEASE":   RELEASE,
 	"ROLLBACK":  ROLLBACK,
 	"COMMIT":    COMMIT,
+	"ANALYZE":   ANALYZE,
+	"VACUUM":    VACUUM,
+	"RESET":     RESET,
 
 	/*
 	 * Data types
