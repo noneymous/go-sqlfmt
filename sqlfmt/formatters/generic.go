@@ -28,13 +28,21 @@ func (formatter *Generic) Format(buf *bytes.Buffer, parent []Formatter, parentId
 		return err
 	}
 
+	// Determine the leading token of the preceding sibling segment. An EXPLAIN prefix is emitted as its own
+	// Generic segment, so a wrapped UPDATE/DELETE statement (also a Generic segment) must be pushed onto a
+	// new line to avoid gluing to the prefix, e.g. "EXPLAINUPDATE".
+	var previousParentToken Token
+	if parentIdx > 0 && parentIdx <= len(parent) {
+		previousParentToken = firstToken(parent[parentIdx-1])
+	}
+
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
 	var previousToken Token
 	for i, el := range elements {
 
 		// Write element or recursively call its Format function
 		if token, ok := el.(Token); ok {
-			formatter.write(buf, token, previousToken, formatter.IndentLevel, i)
+			formatter.write(buf, token, previousToken, previousParentToken, formatter.IndentLevel, i)
 		} else {
 
 			// Set peripheral parameters to tell child elements to write to the same line
@@ -77,7 +85,7 @@ func (formatter *Generic) AddIndent(lev int) {
 	}
 }
 
-func (formatter *Generic) write(buf *bytes.Buffer, token, previousToken Token, indent, position int) {
+func (formatter *Generic) write(buf *bytes.Buffer, token, previousToken, previousParentToken Token, indent, position int) {
 
 	// Prepare short variables for better visibility
 	var INDENT = formatter.Indent
@@ -92,6 +100,13 @@ func (formatter *Generic) write(buf *bytes.Buffer, token, previousToken Token, i
 
 	// Write element
 	switch {
+
+	// A Generic statement wrapped by an EXPLAIN prefix (e.g. "EXPLAIN UPDATE ...") is emitted as its own
+	// segment following the EXPLAIN segment. Break its leading keyword onto a new line, mirroring how
+	// SELECT/INSERT formatters newline their leading keyword, to avoid gluing to the prefix ("EXPLAINUPDATE").
+	case position == 0 && previousParentToken.Type == lexer.EXPLAIN:
+		buf.WriteString(fmt.Sprintf("%s%s%s", NEWLINE, strings.Repeat(INDENT, indent), token.Value))
+
 	case position == 0:
 		buf.WriteString(fmt.Sprintf("%s", token.Value))
 
@@ -105,6 +120,24 @@ func (formatter *Generic) write(buf *bytes.Buffer, token, previousToken Token, i
 	default:
 		buf.WriteString(fmt.Sprintf("%s%s", WHITESPACE, token.Value))
 	}
+}
+
+// firstToken returns the leading Token of a Formatter segment, if determinable. It unwraps a Generic
+// group to its first token element. An empty Token (Type 0) is returned when no leading token applies.
+func firstToken(f Formatter) Token {
+	switch v := f.(type) {
+	case Token:
+		return v
+	case *Token:
+		return *v
+	case *Generic:
+		if len(v.Elements) > 0 {
+			if token, ok := v.Elements[0].(Token); ok {
+				return token
+			}
+		}
+	}
+	return Token{}
 }
 
 // isCopy reports whether this Generic formatter represents a COPY statement,

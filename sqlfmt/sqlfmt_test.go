@@ -1404,6 +1404,168 @@ TO stdout`,
 FROM stdin
 WITH (format csv, header true)`,
 		},
+		{
+			name: "Copy columns from file with many options",
+			sql:  `copy all_hosts (col1, col2, col3) from '/tmp/data.csv' with (format csv, header true, delimiter ',', null 'NULL')`,
+			want: `COPY all_hosts (col1, col2, col3)
+FROM '/tmp/data.csv'
+WITH (format csv, header true, delimiter ',', NULL 'NULL')`,
+		},
+		{
+			name: "Copy ordered subquery to file",
+			sql:  `copy (select id, name from all_hosts where id > 10 order by name) to '/tmp/out.csv' with (format csv)`,
+			want: `COPY (
+  SELECT
+    id,
+    name
+  FROM all_hosts
+  WHERE id > 10
+  ORDER BY name
+)
+TO '/tmp/out.csv'
+WITH (format csv)`,
+		},
+		{
+			name: "Copy from program",
+			sql:  `copy all_hosts from program 'gzip -dc /tmp/data.csv.gz' with (format csv)`,
+			want: `COPY all_hosts
+FROM program 'gzip -dc /tmp/data.csv.gz'
+WITH (format csv)`,
+		},
+		{
+			name: "Copy joined subquery to stdout",
+			sql:  `copy (select h.id, h.name from all_hosts h join tags t on t.host_id = h.id where t.active = true) to stdout`,
+			want: `COPY (
+  SELECT
+    h.id,
+    h.name
+  FROM all_hosts h
+  JOIN tags t ON t.host_id = h.id
+  WHERE t.active = true
+)
+TO stdout`,
+		},
+
+		/*
+		 * Explain queries
+		 */
+		{
+			name: "Explain select",
+			sql:  `explain select * from all_hosts`,
+			want: `EXPLAIN
+SELECT
+  *
+FROM all_hosts`,
+		},
+		{
+			name: "Explain analyze select",
+			sql:  `explain analyze select id from all_hosts where id > 5`,
+			want: `EXPLAIN ANALYZE
+SELECT
+  id
+FROM all_hosts
+WHERE id > 5`,
+		},
+		{
+			name: "Explain with options select",
+			sql:  `explain (format json) select * from all_hosts`,
+			want: `EXPLAIN (format json)
+SELECT
+  *
+FROM all_hosts`,
+		},
+		{
+			name: "Explain analyze verbose select",
+			sql:  `explain analyze verbose select * from all_hosts`,
+			want: `EXPLAIN ANALYZE verbose
+SELECT
+  *
+FROM all_hosts`,
+		},
+		{
+			name: "Explain insert",
+			sql:  `explain insert into all_hosts (id) values (1)`,
+			want: `EXPLAIN
+INSERT INTO all_hosts
+  (id)
+VALUES
+  (1)`,
+		},
+		{
+			name: "Explain update",
+			sql:  `explain update all_hosts set id = 1 where id = 2`,
+			want: `EXPLAIN
+UPDATE all_hosts
+SET id = 1
+WHERE id = 2`,
+		},
+		{
+			name: "Explain delete",
+			sql:  `explain delete from all_hosts where id = 1`,
+			want: `EXPLAIN
+DELETE FROM all_hosts
+WHERE id = 1`,
+		},
+		{
+			name: "Explain with multiple options",
+			sql:  `explain (analyze, buffers, format json) select * from all_hosts where id > 5`,
+			want: `EXPLAIN (ANALYZE, buffers, format json)
+SELECT
+  *
+FROM all_hosts
+WHERE id > 5`,
+		},
+		{
+			name: "Explain analyze with cte",
+			sql:  `explain analyze with recent as (select id from all_hosts where id > 100) select * from recent`,
+			want: `EXPLAIN ANALYZE
+WITH recent AS (
+  SELECT
+    id
+  FROM all_hosts
+  WHERE id > 100
+)
+SELECT
+  *
+FROM recent`,
+		},
+		{
+			name: "Explain select with join and order",
+			sql:  `explain select h.id, h.name from all_hosts h join tags t on t.host_id = h.id where t.active = true order by h.name`,
+			want: `EXPLAIN
+SELECT
+  h.id,
+  h.name
+FROM all_hosts h
+JOIN tags t ON t.host_id = h.id
+WHERE t.active = true
+ORDER BY h.name`,
+		},
+		{
+			name: "Explain update with subquery",
+			sql:  `explain update all_hosts set name = 'x', updated = now() where id in (select host_id from tags where active = true)`,
+			want: `EXPLAIN
+UPDATE all_hosts
+SET name = 'x', updated = NOW()
+WHERE id IN (
+  SELECT
+    host_id
+  FROM tags
+  WHERE active = true
+)`,
+		},
+		{
+			name: "Explain verbose select with union",
+			sql:  `explain (verbose) select id from all_hosts union select id from archived_hosts`,
+			want: `EXPLAIN (verbose)
+SELECT
+  id
+FROM all_hosts
+UNION
+SELECT
+  id
+FROM archived_hosts`,
+		},
 
 		/*
 		 * END

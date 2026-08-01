@@ -131,6 +131,7 @@ const (
 	VACUUM
 	RESET
 	COPY
+	EXPLAIN
 )
 
 // Define end keywords for each clause segment
@@ -172,6 +173,7 @@ var (
 	EndOfVacuum      = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfReset       = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfCopy        = []TokenType{EOF}
+	EndOfExplain     = []TokenType{SELECT, INSERT, UPDATE, DELETE, VALUES, WITH, EOF}
 	EndOfComment     []TokenType // Empty slice means anything is end token
 )
 
@@ -279,6 +281,7 @@ var keywordMap = map[string]TokenType{
 	"VACUUM":    VACUUM,
 	"RESET":     RESET,
 	"COPY":      COPY,
+	"EXPLAIN":   EXPLAIN,
 
 	/*
 	 * Data types
