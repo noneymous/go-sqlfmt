@@ -128,6 +128,14 @@ func NewParser(tokens []lexer.Token, options *formatters.Options) (*Parser, erro
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfCopy}, nil
 	case lexer.EXPLAIN:
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfExplain}, nil
+	case lexer.DEALLOCATE:
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfDeallocate}, nil
+	case lexer.GRANT:
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfGrant}, nil
+	case lexer.REVOKE:
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfRevoke}, nil
+	case lexer.REINDEX:
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfReindex}, nil
 	default:
 		return nil, fmt.Errorf("invalid start token '%s'", tokens[0].Value)
 	}
@@ -358,6 +366,12 @@ func (r *Parser) isNewSegment(idx int) bool {
 		return false
 	}
 
+	// Keep SELECT privileges and recipient FROM clauses inside GRANT and REVOKE statements
+	if (tokenFirst.Type == lexer.GRANT || tokenFirst.Type == lexer.REVOKE) &&
+		(tokenCurrent.Type == lexer.SELECT || tokenCurrent.Type == lexer.FROM) {
+		return false
+	}
+
 	//
 	// Positive indicators:
 	//
@@ -478,7 +492,8 @@ func (r *Parser) buildFormatter() formatters.Formatter {
 
 	case lexer.CREATE, lexer.ALTER, lexer.UPDATE, lexer.DELETE, lexer.DROP,
 		lexer.SHOW, lexer.DISCARD, lexer.BEGIN, lexer.SAVEPOINT, lexer.RELEASE, lexer.ROLLBACK, lexer.COMMIT,
-		lexer.ANALYZE, lexer.VACUUM, lexer.RESET, lexer.COPY, lexer.EXPLAIN:
+		lexer.ANALYZE, lexer.VACUUM, lexer.RESET, lexer.COPY, lexer.EXPLAIN, lexer.DEALLOCATE, lexer.GRANT,
+		lexer.REVOKE, lexer.REINDEX:
 		return &formatters.Generic{Options: r.options, Elements: elements}
 	}
 

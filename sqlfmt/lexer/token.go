@@ -132,6 +132,10 @@ const (
 	RESET
 	COPY
 	EXPLAIN
+	DEALLOCATE
+	GRANT
+	REVOKE
+	REINDEX
 )
 
 // Define end keywords for each clause segment
@@ -174,6 +178,10 @@ var (
 	EndOfReset       = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfCopy        = []TokenType{EOF}
 	EndOfExplain     = []TokenType{SELECT, INSERT, UPDATE, DELETE, VALUES, WITH, EOF}
+	EndOfDeallocate  = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfGrant       = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfRevoke      = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfReindex     = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfComment     []TokenType // Empty slice means anything is end token
 )
 
@@ -270,18 +278,22 @@ var keywordMap = map[string]TokenType{
 	/*
 	 * Special queries
 	 */
-	"SHOW":      SHOW,
-	"DISCARD":   DISCARD,
-	"BEGIN":     BEGIN,
-	"SAVEPOINT": SAVEPOINT,
-	"RELEASE":   RELEASE,
-	"ROLLBACK":  ROLLBACK,
-	"COMMIT":    COMMIT,
-	"ANALYZE":   ANALYZE,
-	"VACUUM":    VACUUM,
-	"RESET":     RESET,
-	"COPY":      COPY,
-	"EXPLAIN":   EXPLAIN,
+	"SHOW":       SHOW,
+	"DISCARD":    DISCARD,
+	"BEGIN":      BEGIN,
+	"SAVEPOINT":  SAVEPOINT,
+	"RELEASE":    RELEASE,
+	"ROLLBACK":   ROLLBACK,
+	"COMMIT":     COMMIT,
+	"ANALYZE":    ANALYZE,
+	"VACUUM":     VACUUM,
+	"RESET":      RESET,
+	"COPY":       COPY,
+	"EXPLAIN":    EXPLAIN,
+	"DEALLOCATE": DEALLOCATE,
+	"GRANT":      GRANT,
+	"REVOKE":     REVOKE,
+	"REINDEX":    REINDEX,
 
 	/*
 	 * Data types

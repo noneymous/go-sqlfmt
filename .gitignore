@@ -2,6 +2,9 @@ dummy.go
 vendor
 .DS_Store
 
-
 # for GoLand user
 .idea
+
+# CI generated files
+/.go/
+/.gocache/

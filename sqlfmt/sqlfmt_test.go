@@ -1659,6 +1659,50 @@ FROM archived_hosts`,
 	}
 }
 
+// TestFormat_AdministrativeStatements_ReturnsFormattedSql verifies supported administrative PostgreSQL statements
+func TestFormat_AdministrativeStatements_ReturnsFormattedSql(t *testing.T) {
+
+	// Prepare and run test cases
+	testCases := []struct {
+		name string
+		sql  string
+		want string
+	}{
+		{
+			name: "deallocate-all",
+			sql:  `DEALLOCATE ALL`,
+			want: `DEALLOCATE ALL`,
+		},
+		{
+			name: "grant-table-select",
+			sql:  `GRANT SELECT ON TABLE public.t_sql_logs TO "token-example"`,
+			want: `GRANT SELECT ON TABLE public.t_sql_logs TO "token-example"`,
+		},
+		{
+			name: "revoke-table-select",
+			sql:  `REVOKE SELECT ON TABLE public.t_sql_logs FROM "token-example"`,
+			want: `REVOKE SELECT ON TABLE public.t_sql_logs FROM "token-example"`,
+		},
+		{
+			name: "reindex-table-concurrently",
+			sql:  `REINDEX (VERBOSE) TABLE CONCURRENTLY public.t_discovery`,
+			want: `REINDEX (VERBOSE) TABLE CONCURRENTLY public.t_discovery`,
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+
+			// Format the administrative statement
+			formattedSql, errFormattedSql := Format(testCase.sql, formatters.DefaultOptions())
+			if errFormattedSql != nil {
+				t.Errorf("Format() error = '%v', want = '<nil>'", errFormattedSql)
+			} else if formattedSql != testCase.want {
+				t.Errorf("Format() result = '%v', want = '%v'", formattedSql, testCase.want)
+			}
+		})
+	}
+}
+
 func TestCompareSemantic(t *testing.T) {
 	tests := []struct {
 		name   string
