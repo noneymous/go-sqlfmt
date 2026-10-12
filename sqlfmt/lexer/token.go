@@ -136,6 +136,8 @@ const (
 	GRANT
 	REVOKE
 	REINDEX
+	DECLARE
+	CLOSE
 )
 
 // Define end keywords for each clause segment
@@ -182,6 +184,8 @@ var (
 	EndOfGrant       = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfRevoke      = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfReindex     = []TokenType{ENDPARENTHESIS, EOF}
+	EndOfDeclare     = []TokenType{SELECT, VALUES, EOF}
+	EndOfClose       = []TokenType{EOF}
 	EndOfComment     []TokenType // Empty slice means anything is end token
 )
 
@@ -294,6 +298,8 @@ var keywordMap = map[string]TokenType{
 	"GRANT":      GRANT,
 	"REVOKE":     REVOKE,
 	"REINDEX":    REINDEX,
+	"DECLARE":    DECLARE,
+	"CLOSE":      CLOSE,
 
 	/*
 	 * Data types

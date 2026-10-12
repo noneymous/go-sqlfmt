@@ -1703,6 +1703,125 @@ func TestFormat_AdministrativeStatements_ReturnsFormattedSql(t *testing.T) {
 	}
 }
 
+// TestFormat_CursorStatements_PreservesQuery verifies cursor declarations and closures retain their SQL semantics
+func TestFormat_CursorStatements_PreservesQuery(t *testing.T) {
+
+	// Prepare unit test data covering cursor options, quoted names, and nested queries
+	testCases := []struct {
+		name string
+		sql  string
+		want string
+	}{
+		{
+			name: "declare-select",
+			sql:  `DECLARE "example_hosts" CURSOR FOR SELECT * FROM "public"."all_hosts" WHERE scan_cycle = $1`,
+			want: "DECLARE \"example_hosts\" CURSOR FOR\nSELECT\n  *\nFROM \"public\".\"all_hosts\"\nWHERE scan_cycle = $1",
+		},
+		{
+			name: "declare-options-with-hold",
+			sql:  `DECLARE example BINARY INSENSITIVE NO SCROLL CURSOR WITH HOLD FOR SELECT id FROM all_hosts`,
+			want: "DECLARE example BINARY INSENSITIVE NO SCROLL CURSOR WITH HOLD FOR\nSELECT\n  id\nFROM all_hosts",
+		},
+		{
+			name: "declare-without-hold",
+			sql:  `DECLARE example SCROLL CURSOR WITHOUT HOLD FOR SELECT id FROM all_hosts`,
+			want: "DECLARE example SCROLL CURSOR WITHOUT HOLD FOR\nSELECT\n  id\nFROM all_hosts",
+		},
+		{
+			name: "declare-lowercase-and-keyword-name",
+			sql:  `declare "CLOSE" cursor for select id from all_hosts`,
+			want: "DECLARE \"CLOSE\" cursor FOR\nSELECT\n  id\nFROM all_hosts",
+		},
+		{
+			name: "close-quoted-name",
+			sql:  `CLOSE "example_hosts"`,
+			want: `CLOSE "example_hosts"`,
+		},
+		{
+			name: "close-unquoted-name",
+			sql:  `close example_hosts`,
+			want: `CLOSE example_hosts`,
+		},
+		{
+			name: "close-all",
+			sql:  `close all`,
+			want: `CLOSE ALL`,
+		},
+	}
+
+	// Prepare and run test cases through the real lexer, parser, and formatter
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+
+			// Format the cursor statement without changing its meaning
+			formattedSql, errFormattedSql := Format(testCase.sql, formatters.DefaultOptions())
+			if errFormattedSql != nil {
+				t.Fatalf("Format() error = '%v', want = '<nil>'", errFormattedSql)
+			}
+
+			// Verify layout and preservation of the complete original statement
+			if formattedSql != testCase.want {
+				t.Errorf("Format() result = '%v', want = '%v'", formattedSql, testCase.want)
+			}
+			if !CompareSemantic(testCase.sql, formattedSql) {
+				t.Errorf("Format() changed query semantics: '%v'", formattedSql)
+			}
+		})
+	}
+}
+
+// TestFormat_CursorQueries_PreservesSemantics verifies supported query variants inside cursor declarations
+func TestFormat_CursorQueries_PreservesSemantics(t *testing.T) {
+
+	// Prepare unit test data for cursor query variants and comments
+	testCases := []struct {
+		name string
+		sql  string
+	}{
+		{
+			name: "values-query",
+			sql:  `DECLARE example CURSOR FOR VALUES (1), (2)`,
+		},
+		{
+			name: "cte-query",
+			sql:  `DECLARE example CURSOR FOR WITH hosts AS (SELECT id FROM all_hosts) SELECT id FROM hosts`,
+		},
+		{
+			name: "lowercase-hold-and-cte",
+			sql:  `declare example cursor with hold for with hosts as (select id from all_hosts) select id from hosts`,
+		},
+		{
+			name: "union-and-subquery",
+			sql:  `DECLARE example CURSOR FOR SELECT id FROM all_hosts WHERE id IN (SELECT id FROM archived_hosts) UNION SELECT id FROM other_hosts`,
+		},
+		{
+			name: "row-locking-query",
+			sql:  `DECLARE example CURSOR FOR SELECT id FROM all_hosts FOR UPDATE`,
+		},
+		{
+			name: "close-with-comment-and-semicolon",
+			sql:  "CLOSE \"WITH\"; -- release cursor",
+		},
+	}
+
+	// Prepare and run test cases with the same public formatter used by consumers
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+
+			// Format the complete cursor statement
+			formattedSql, errFormattedSql := Format(testCase.sql, formatters.DefaultOptions())
+			if errFormattedSql != nil {
+				t.Fatalf("Format() error = '%v', want = '<nil>'", errFormattedSql)
+			}
+
+			// Verify the formatter preserves every meaningful token
+			if !CompareSemantic(testCase.sql, formattedSql) {
+				t.Errorf("Format() changed query semantics: '%v'", formattedSql)
+			}
+		})
+	}
+}
+
 func TestCompareSemantic(t *testing.T) {
 	tests := []struct {
 		name   string

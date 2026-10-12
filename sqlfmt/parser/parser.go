@@ -2,6 +2,8 @@ package parser
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/noneymous/go-sqlfmt/sqlfmt/formatters"
 	"github.com/noneymous/go-sqlfmt/sqlfmt/lexer"
 )
@@ -136,6 +138,10 @@ func NewParser(tokens []lexer.Token, options *formatters.Options) (*Parser, erro
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfRevoke}, nil
 	case lexer.REINDEX:
 		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfReindex}, nil
+	case lexer.DECLARE:
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfDeclare}, nil
+	case lexer.CLOSE:
+		return &Parser{options: options, tokens: tokens, endTypes: lexer.EndOfClose}, nil
 	default:
 		return nil, fmt.Errorf("invalid start token '%s'", tokens[0].Value)
 	}
@@ -372,6 +378,11 @@ func (r *Parser) isNewSegment(idx int) bool {
 		return false
 	}
 
+	// Keep the cursor's WITH HOLD option in its declaration rather than treating it as a CTE
+	if tokenFirst.Type == lexer.DECLARE && tokenCurrent.Type == lexer.WITH && strings.EqualFold(tokenNext.Value, "HOLD") {
+		return false
+	}
+
 	//
 	// Positive indicators:
 	//
@@ -493,7 +504,7 @@ func (r *Parser) buildFormatter() formatters.Formatter {
 	case lexer.CREATE, lexer.ALTER, lexer.UPDATE, lexer.DELETE, lexer.DROP,
 		lexer.SHOW, lexer.DISCARD, lexer.BEGIN, lexer.SAVEPOINT, lexer.RELEASE, lexer.ROLLBACK, lexer.COMMIT,
 		lexer.ANALYZE, lexer.VACUUM, lexer.RESET, lexer.COPY, lexer.EXPLAIN, lexer.DEALLOCATE, lexer.GRANT,
-		lexer.REVOKE, lexer.REINDEX:
+		lexer.REVOKE, lexer.REINDEX, lexer.DECLARE, lexer.CLOSE:
 		return &formatters.Generic{Options: r.options, Elements: elements}
 	}
 
