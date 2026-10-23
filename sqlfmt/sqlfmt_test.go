@@ -224,7 +224,8 @@ WHERE a = 1`,
 		{
 			name: "Parenthesis variations",
 			sql:  `select distinct on (col1, col2) a0, t1.attr1 as a1, t1.attr2 as a2, pg_catalog.not_a_function (db.oid, 'create') as a3, pg_catalog.has_database_privilege(t1.oid, 'create') as a4, date_trunc('day', to_timestamp('2022-01-01')) as a5 from tble1 t1 left join tble2 t2 on (t2.id = t1.id) where db in ('postgres', 'edb') and any ((select * from tble3 where rel in ('r', 's', 't', 'p') and oid = 33176310:: oid and col3 = '' or ((port = 80 and port = 443) or (port = 80 and port = 443))):: oid []) order by attr, attr2`,
-			want: `SELECT DISTINCT ON (col1, col2) a0,
+			want: `SELECT DISTINCT ON (col1, col2)
+  a0,
   t1.attr1 AS a1,
   t1.attr2 AS a2,
   pg_catalog.not_a_function (db.oid, 'create') AS a3,
@@ -687,7 +688,8 @@ FROM city_data;`,
 		{
 			name: "distinct on 1",
 			sql:  `select distinct on (col1, col2) col1, col2 from tabellenname order by col1, col2;`,
-			want: `SELECT DISTINCT ON (col1, col2) col1,
+			want: `SELECT DISTINCT ON (col1, col2)
+  col1,
   col2
 FROM tabellenname
 ORDER BY col1, col2;`,
@@ -695,7 +697,8 @@ ORDER BY col1, col2;`,
 		{
 			name: "distinct on 2",
 			sql:  `select distinct on (col1, col2) col1 from tabellenname order by col1, col2;`,
-			want: `SELECT DISTINCT ON (col1, col2) col1
+			want: `SELECT DISTINCT ON (col1, col2)
+  col1
 FROM tabellenname
 ORDER BY col1, col2;`,
 		},
@@ -1654,6 +1657,156 @@ FROM archived_hosts`,
 				} else {
 					fmt.Println(fmt.Sprintf("%s\n%s", got, "========================================================================"))
 				}
+			}
+		})
+	}
+}
+
+// TestFormat_SelectModifiers_StartsColumnsOnNewLine verifies SELECT modifiers stay above the projected columns
+func TestFormat_SelectModifiers_StartsColumnsOnNewLine(t *testing.T) {
+
+	// Prepare unit test data covering simple columns, expressions, comments, and nested SELECT clauses
+	testCases := []struct {
+		name string
+		sql  string
+		want string
+	}{
+		{
+			name: "distinct-columns",
+			sql:  `select distinct address, port from services`,
+			want: `SELECT DISTINCT
+  address,
+  port
+FROM services`,
+		},
+		{
+			name: "distinct-single-column",
+			sql:  `select distinct address from services`,
+			want: `SELECT DISTINCT
+  address
+FROM services`,
+		},
+		{
+			name: "distinct-wildcard",
+			sql:  `select distinct * from services`,
+			want: `SELECT DISTINCT
+  *
+FROM services`,
+		},
+		{
+			name: "distinct-quoted-column-and-expression",
+			sql:  `select distinct "address" as host, port + 1 from services`,
+			want: `SELECT DISTINCT
+  "address" AS host,
+  port + 1
+FROM services`,
+		},
+		{
+			name: "distinct-function",
+			sql:  `select distinct concat(address, ':', port), ip from services`,
+			want: `SELECT DISTINCT
+  CONCAT(address, ':', port),
+  ip
+FROM services`,
+		},
+		{
+			name: "distinct-parenthesized-expression",
+			sql:  `select distinct (port + 1), address from services`,
+			want: `SELECT DISTINCT
+  (port + 1),
+  address
+FROM services`,
+		},
+		{
+			name: "distinct-row-modifier",
+			sql:  `select distinctrow address, port from services`,
+			want: `SELECT DISTINCTROW
+  address,
+  port
+FROM services`,
+		},
+		{
+			name: "distinct-on-columns",
+			sql:  `select distinct on (address, port) address, ip, port from services`,
+			want: `SELECT DISTINCT ON (address, port)
+  address,
+  ip,
+  port
+FROM services`,
+		},
+		{
+			name: "distinct-on-single-column",
+			sql:  `select distinct on (address, port) address from services`,
+			want: `SELECT DISTINCT ON (address, port)
+  address
+FROM services`,
+		},
+		{
+			name: "distinct-on-parenthesized-expression",
+			sql:  `select distinct on (address) (port + 1), address from services`,
+			want: `SELECT DISTINCT ON (address)
+  (port + 1),
+  address
+FROM services`,
+		},
+		{
+			name: "distinct-comment",
+			sql: `select distinct -- unique hosts
+ address, port from services`,
+			want: `SELECT DISTINCT -- unique hosts
+  address,
+  port
+FROM services`,
+		},
+		{
+			name: "distinct-on-comment",
+			sql:  `select distinct on (address) /* first host */ address, port from services`,
+			want: `SELECT DISTINCT ON (address) /* first host */
+  address,
+  port
+FROM services`,
+		},
+		{
+			name: "nested-union",
+			sql:  `select distinct address, port from (select address, port from services union (select distinct on (address, port) address, port from pages order by address, port)) as result`,
+			want: `SELECT DISTINCT
+  address,
+  port
+FROM (
+  SELECT
+    address,
+    port
+  FROM services
+  UNION (
+    SELECT DISTINCT ON (address, port)
+      address,
+      port
+    FROM pages
+    ORDER BY address, port
+  )
+) AS result`,
+		},
+	}
+
+	// Prepare and run test cases
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+
+			// Verify the exact layout through the public formatter and its semantic safety check
+			formattedSql, errFormattedSql := Format(testCase.sql, formatters.DefaultOptions())
+			if errFormattedSql != nil {
+				t.Fatalf("Format() error = '%v', want = '<nil>'", errFormattedSql)
+			}
+			if formattedSql != testCase.want {
+				t.Errorf("Format() result = '%v', want = '%v'", formattedSql, testCase.want)
+			}
+
+			// Verify formatting an already formatted query preserves the same layout
+			formattedSqlAgain, errFormattedSqlAgain := Format(formattedSql, formatters.DefaultOptions())
+			if errFormattedSqlAgain != nil {
+				t.Errorf("Format() repeated error = '%v', want = '<nil>'", errFormattedSqlAgain)
+			} else if formattedSqlAgain != formattedSql {
+				t.Errorf("Format() repeated result = '%v', want = '%v'", formattedSqlAgain, formattedSql)
 			}
 		})
 	}

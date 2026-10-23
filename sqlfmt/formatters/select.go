@@ -27,13 +27,37 @@ func (formatter *Select) Format(buf *bytes.Buffer, parent []Formatter, parentIdx
 		return err
 	}
 
+	// Find the first column after SELECT modifiers and the optional DISTINCT ON expression list
+	var columnStart = 1
+	var distinctOn = false
+	for i := 1; i < len(elements); i++ {
+		if token, ok := elements[i].(Token); ok {
+			switch token.Type {
+			case lexer.DISTINCT, lexer.DISTINCTROW, lexer.COMMENT:
+				columnStart = i + 1
+				continue
+			case lexer.ON:
+				distinctOn = true
+				columnStart = i + 1
+				continue
+			}
+		} else if distinctOn {
+			distinctOn = false
+			columnStart = i + 1
+			continue
+		}
+
+		// Stop at the first projected column rather than inspecting its expression
+		break
+	}
+
 	// Iterate and write elements to the buffer. Recursively step into nested elements.
 	var previousToken Token
 	for i, el := range elements {
 
 		// Write element or recursively call its Format function
 		if token, ok := el.(Token); ok {
-			formatter.writeSelect(buf, token, previousToken, formatter.IndentLevel, i, true)
+			formatter.writeSelect(buf, token, previousToken, formatter.IndentLevel, i-columnStart+1, true)
 		} else {
 
 			// Set peripheral parameters
@@ -41,6 +65,23 @@ func (formatter *Select) Format(buf *bytes.Buffer, parent []Formatter, parentIdx
 			case *Parenthesis:
 				v2.IsColumnArea = true
 				v2.PositionInParent = i
+
+				// Start a parenthesized first column below the complete SELECT modifier
+				if columnStart > 1 && i == columnStart {
+					v2.PositionInParent = 0
+
+					// Only flat parentheses add their own extra indent when starting a new line
+					var flat = true
+					for _, child := range v2.Elements {
+						if _, ok := child.(Token); !ok {
+							flat = false
+							break
+						}
+					}
+					if flat {
+						v2.AddIndent(-1)
+					}
+				}
 			case *Subquery:
 				v2.IsColumnArea = true
 			case *Function:
