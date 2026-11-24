@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"strings"
+	"unicode"
 )
 
 // DisableFunctionKeywords - Postgres has a few functions without parenthesis. They look like normal keywords,
@@ -162,6 +164,43 @@ func (t *tokenizer) scan() (Token, error) {
 		// Continue after select with reading other tokens otherwise
 		break
 
+	case ch == '$':
+
+		// Recognize dollar-quote tags without consuming parameter numbers such as $1
+		for {
+			next, _, errNext := t.r.ReadRune()
+			if errNext == io.EOF {
+				break
+			} else if errNext != nil {
+				return Token{}, errNext
+			}
+			if next == '$' {
+				buf.WriteRune(next)
+				delimiter := append([]byte(nil), buf.Bytes()...)
+
+				// Keep the complete body opaque, including quotes, comments and other dollar tags
+				for {
+					bodyRune, _, errBodyRune := t.r.ReadRune()
+					if errBodyRune == io.EOF {
+						return Token{}, fmt.Errorf("unexpected EOF expected closing dollar quote")
+					} else if errBodyRune != nil {
+						return Token{}, errBodyRune
+					}
+					buf.WriteRune(bodyRune)
+					if buf.Len() >= 2*len(delimiter) && bytes.HasSuffix(buf.Bytes(), delimiter) {
+						return Token{Type: STRING, Value: buf.String()}, nil
+					}
+				}
+			}
+
+			// A tag follows identifier rules, with digits allowed only after its first character
+			if next != '_' && !unicode.IsLetter(next) && !(buf.Len() > 1 && next >= '0' && next <= '9') {
+				_ = t.r.UnreadRune()
+				break
+			}
+			buf.WriteRune(next)
+		}
+
 	case isSingleQuote(ch):
 
 		// Read subsequent characters until closing single quote
@@ -180,6 +219,13 @@ func (t *tokenizer) scan() (Token, error) {
 
 			// Break loop once closing quote is found
 			if isSingleQuote(chNext) {
+
+				// Doubled quotes are part of the same string, not separate adjacent literals
+				if next, errNext := t.r.Peek(1); errNext == nil && next[0] == '\'' {
+					_, _ = t.r.ReadByte()
+					buf.WriteByte('\'')
+					continue
+				}
 				break
 			}
 		}

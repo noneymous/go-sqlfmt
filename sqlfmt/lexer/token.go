@@ -186,6 +186,7 @@ var (
 	EndOfReindex     = []TokenType{ENDPARENTHESIS, EOF}
 	EndOfDeclare     = []TokenType{SELECT, VALUES, EOF}
 	EndOfClose       = []TokenType{EOF}
+	EndOfDo          = []TokenType{EOF}
 	EndOfComment     []TokenType // Empty slice means anything is end token
 )
 

@@ -3,10 +3,98 @@ package lexer
 import (
 	"bufio"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
+
+// TestTokenize_DollarQuotes_PreservesBodiesAndParameters verifies quote delimiters do not alter identifiers or parameters
+func TestTokenize_DollarQuotes_PreservesBodiesAndParameters(t *testing.T) {
+
+	// Prepare and run test cases
+	for _, test := range []struct {
+		name      string
+		sql       string
+		wantType  TokenType
+		wantError bool
+	}{
+		{
+			name:     "empty-body",
+			sql:      `$$$$`,
+			wantType: STRING,
+		},
+		{
+			name:     "empty-tagged-body",
+			sql:      `$a$$a$`,
+			wantType: STRING,
+		},
+		{
+			name: "unicode-tag",
+			sql: `$ä_1$'quoted'; -- comment
+$ä_1$`,
+			wantType: STRING,
+		},
+		{
+			name:     "different-inner-tag",
+			sql:      `$outer$ $$inner$$ $other$ $outer$`,
+			wantType: STRING,
+		},
+		{
+			name:     "parameter",
+			sql:      `$1`,
+			wantType: IDENT,
+		},
+		{
+			name:     "digit-not-tag",
+			sql:      `$1$`,
+			wantType: IDENT,
+		},
+		{
+			name:     "identifier-with-dollars",
+			sql:      `name$tag$`,
+			wantType: IDENT,
+		},
+		{
+			name:     "doubled-single-quote",
+			sql:      `'a''b'`,
+			wantType: STRING,
+		},
+		{
+			name:      "missing-close",
+			sql:       `$body$unfinished`,
+			wantError: true,
+		},
+		{
+			name:      "case-sensitive-close",
+			sql:       `$body$x$BODY$`,
+			wantError: true,
+		},
+		{
+			name:      "overlapping-close",
+			sql:       `$body$body$`,
+			wantError: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+
+			// Verify the whole quoted value remains one token or reports its missing delimiter
+			tokens, errTokens := Tokenize(test.sql)
+			if test.wantError {
+				if errTokens == nil {
+					t.Error("Tokenize() error = 'nil', want = 'unterminated quote'")
+				}
+				return
+			}
+			if errTokens != nil {
+				t.Fatalf("Tokenize() error = '%v', want = 'nil'", errTokens)
+			}
+			if len(tokens) != 2 || tokens[0].Type != test.wantType || tokens[0].Value != test.sql || tokens[1].Type != EOF {
+				t.Errorf("Tokenize() tokens = '%v', want = 'one unchanged token and EOF'", tokens)
+			}
+		})
+	}
+}
 
 func TestTokenize(t *testing.T) {
 	var testingSQLStatement = strings.Trim(`select name, age, sum, sum(case xxx) from users where name xxx and age = 'xxx' limit 100 except 100`, "`")

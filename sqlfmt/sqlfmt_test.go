@@ -1812,6 +1812,56 @@ FROM (
 	}
 }
 
+// TestFormat_CommentsAndDoBlocks_PreservesContents verifies leading comments and opaque procedural bodies
+func TestFormat_CommentsAndDoBlocks_PreservesContents(t *testing.T) {
+
+	// Prepare and run test cases
+	for _, test := range []struct {
+		name string
+		sql  string
+	}{
+		{"leading-comments", `-- First comment.
+-- Second comment.
+BEGIN`},
+		{"comment-only", `-- First comment.
+-- Second comment.`},
+		{"block-and-line-comments", `/* Header */-- Explanation
+BEGIN`},
+		{"untagged-body", `DO $$
+BEGIN
+  RAISE NOTICE 'Keep  Spaces';
+END
+$$`},
+		{"tagged-body", `DO $guard$
+BEGIN
+  IF current_database() <> 'example_db' THEN
+    RAISE EXCEPTION 'Wrong database';
+  END IF;
+END
+$guard$`},
+		{"language-before", `DO LANGUAGE plpgsql $body$BEGIN PERFORM 1; END$body$`},
+		{"language-after", `DO $body$BEGIN PERFORM 1; END$body$ LANGUAGE plpgsql`},
+		{"single-quoted-body", `DO 'BEGIN RAISE NOTICE ''Keep  Spaces''; END'`},
+		{"nested-different-tag", `DO $outer$BEGIN RAISE NOTICE $$Inner$$; END$outer$`},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+
+			// Verify formatting preserves the complete statement and is repeatable
+			formatted, errFormatted := Format(test.sql, formatters.DefaultOptions())
+			if errFormatted != nil {
+				t.Fatalf("Format() error = '%v', want = 'nil'", errFormatted)
+			}
+			if formatted != test.sql {
+				t.Errorf("Format() result = '%s', want = '%s'", formatted, test.sql)
+			}
+			formattedAgain, errFormattedAgain := Format(formatted, formatters.DefaultOptions())
+			if errFormattedAgain != nil || formattedAgain != formatted {
+				t.Errorf("Format() repeated result = '%s', error = '%v', want = '%s, nil'", formattedAgain, errFormattedAgain, formatted)
+			}
+		})
+	}
+}
+
 // TestFormat_AdministrativeStatements_ReturnsFormattedSql verifies supported administrative PostgreSQL statements
 func TestFormat_AdministrativeStatements_ReturnsFormattedSql(t *testing.T) {
 
